@@ -1,11 +1,28 @@
 using NUnit.Framework;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 using TextMateSharp.Internal.Grammars;
+using TextMateSharp.Themes;
 
 namespace TextMateSharp.Tests.Internal.Grammars
 {
     [TestFixture]
-    internal class AttributedScopeStackTests
+    public class AttributedScopeStackTests
     {
+        #region Shared test constants
+
+        private const string AnyScopePath = "any.scope";
+        private const int ExistingLanguageId = 7;
+        private const int ExistingTokenType = 1;
+        private const FontStyle ExistingFontStyle = FontStyle.Bold;
+        private const int ExistingForeground = 5;
+        private const int ExistingBackground = 6;
+        private const int NewLanguageId = 9;
+        private const int NewTokenType = 2;
+
+        #endregion
+
         [Test]
         public void Equals_ShouldMatchEquivalentStacks()
         {
@@ -41,5 +58,1100 @@ namespace TextMateSharp.Tests.Internal.Grammars
 
             Assert.IsFalse(stack.Equals(null));
         }
+
+        #region Constructor tests
+
+        [Test]
+        public void Constructor_AssignsProperties()
+        {
+            // arrange
+            const string parentScopePath = "parent.scope";
+            const int parentTokenAttributes = 123;
+            AttributedScopeStack parent = new AttributedScopeStack(null, parentScopePath, parentTokenAttributes);
+
+            const string childScopePath = "child.scope";
+            const int childTokenAttributes = 456;
+
+            // act
+            AttributedScopeStack stack = new AttributedScopeStack(parent, childScopePath, childTokenAttributes);
+
+            // assert
+            Assert.AreSame(parent, stack.Parent);
+            Assert.AreEqual(childScopePath, stack.ScopePath);
+            Assert.AreEqual(childTokenAttributes, stack.TokenAttributes);
+        }
+
+        [Test]
+        public void Constructor_AllowsNullScopePath()
+        {
+            // arrange
+            AttributedScopeStack parent = null;
+            string scopePath = null;
+            const int tokenAttributes = 0;
+
+            // act
+            AttributedScopeStack stack = new AttributedScopeStack(parent, scopePath, tokenAttributes);
+
+            // assert
+            Assert.IsNull(stack.ScopePath);
+            Assert.AreEqual(tokenAttributes, stack.TokenAttributes);
+        }
+
+        #endregion Constructor tests
+
+        #region Equals tests
+
+        [Test]
+        public void Equals_Null_ReturnsFalse()
+        {
+            // arrange
+            AttributedScopeStack stack = new AttributedScopeStack(null, "source.cs", 1);
+
+            // act
+            bool result = stack.Equals(null);
+
+            // assert
+            Assert.IsFalse(result);
+        }
+
+        [Test]
+        public void Equals_DifferentType_ReturnsFalse()
+        {
+            // arrange
+            AttributedScopeStack stack = new AttributedScopeStack(null, "source.cs", 1);
+            object other = 42;
+
+            // act
+            bool result = stack.Equals(other);
+
+            // assert
+            Assert.IsFalse(result);
+        }
+
+        [Test]
+        public void Equals_StructurallyEquivalentStacks_ReturnTrue()
+        {
+            // arrange
+            AttributedScopeStack stack1 = new AttributedScopeStack(new AttributedScopeStack(null, "source.cs", 1), "meta.test", 2);
+            AttributedScopeStack stack2 = new AttributedScopeStack(new AttributedScopeStack(null, "source.cs", 1), "meta.test", 2);
+
+            // act
+            bool stack1EqualsStack2 = stack1.Equals(stack2);
+            bool stack2EqualsStack1 = stack2.Equals(stack1);
+
+            // assert
+            Assert.IsTrue(stack1EqualsStack2);
+            Assert.IsTrue(stack2EqualsStack1);
+        }
+
+        [Test]
+        public void Equals_DifferentStacks_ReturnFalse()
+        {
+            // arrange
+            AttributedScopeStack stack1 = new AttributedScopeStack(new AttributedScopeStack(null, "source.cs", 1), "meta.test", 2);
+            AttributedScopeStack stack2 = new AttributedScopeStack(new AttributedScopeStack(null, "source.cs", 1), "meta.other", 2);
+
+            // act
+            bool stack1EqualsStack2 = stack1.Equals(stack2);
+            bool stack2EqualsStack1 = stack2.Equals(stack1);
+
+            // assert
+            Assert.IsFalse(stack1EqualsStack2);
+            Assert.IsFalse(stack2EqualsStack1);
+        }
+
+        [Test]
+        public void Equals_SameReference_ReturnsTrue()
+        {
+            // arrange
+            AttributedScopeStack stack = CreateStack(("a", 1), ("b", 2));
+
+            // act
+            bool result = stack.Equals((object)stack);
+
+            // assert
+            Assert.IsTrue(result);
+        }
+
+        [Test]
+        public void Equals_DifferentLengths_ReturnsFalse()
+        {
+            // arrange
+            AttributedScopeStack shorter = CreateStack(("a", 1), ("b", 2));
+            AttributedScopeStack longer = CreateStack(("a", 1), ("b", 2), ("c", 3));
+
+            // act
+            bool shorterEqualsLonger = shorter.Equals((object)longer);
+            bool longerEqualsShorter = longer.Equals((object)shorter);
+
+            // assert
+            Assert.IsFalse(shorterEqualsLonger);
+            Assert.IsFalse(longerEqualsShorter);
+        }
+
+        [Test]
+        public void Equals_ScopePathNullInBothStacksAtSamePosition_ReturnsTrue()
+        {
+            // arrange
+            AttributedScopeStack left = CreateStack((null, 1), ("b", 2));
+            AttributedScopeStack right = CreateStack((null, 1), ("b", 2));
+
+            // act
+            bool result = left.Equals((object)right);
+
+            // assert
+            Assert.IsTrue(result);
+        }
+
+        [Test]
+        public void Equals_NullScopePathInOneStack_NotEqual()
+        {
+            // arrange
+            AttributedScopeStack left = CreateStack((null, 1), ("b", 2));
+            AttributedScopeStack right = CreateStack(("a", 1), ("b", 2));
+
+            // act
+            bool result = left.Equals((object)right);
+
+            // assert
+            Assert.IsFalse(result);
+        }
+
+        [Test]
+        public void Equals_EquivalentButDistinctChains_ReturnsTrue()
+        {
+            // arrange
+            AttributedScopeStack left = new AttributedScopeStack(
+                new AttributedScopeStack(null, "a", 1),
+                "b",
+                2);
+
+            AttributedScopeStack right = new AttributedScopeStack(
+                new AttributedScopeStack(null, "a", 1),
+                "b",
+                2);
+
+            // act
+            bool result = left.Equals(right);
+
+            // assert
+            Assert.IsTrue(result);
+        }
+
+        [Test]
+        public void Equals_SameLeafButOneStackHasExtraParent_ReturnsFalse()
+        {
+            // arrange
+            const string sharedLeafScope = "b";
+            const int sharedLeafTokenAttributes = 2;
+
+            AttributedScopeStack longer = new AttributedScopeStack(
+                new AttributedScopeStack(null, "a", 1),
+                sharedLeafScope,
+                sharedLeafTokenAttributes);
+
+            AttributedScopeStack shorter = new AttributedScopeStack(
+                null,
+                sharedLeafScope,
+                sharedLeafTokenAttributes);
+
+            // act
+            bool result = longer.Equals(shorter);
+
+            // assert
+            Assert.IsFalse(result);
+        }
+
+        [Test]
+        public void Equals_SameLeafAndSameParentInstance_ReturnsTrue()
+        {
+            // arrange
+            const string parentScope = "shared.parent";
+            const int parentTokenAttributes = 1;
+
+            const string leafScope = "leaf";
+            const int leafTokenAttributes = 2;
+
+            AttributedScopeStack sharedParent = new AttributedScopeStack(null, parentScope, parentTokenAttributes);
+
+            AttributedScopeStack left = new AttributedScopeStack(sharedParent, leafScope, leafTokenAttributes);
+            AttributedScopeStack right = new AttributedScopeStack(sharedParent, leafScope, leafTokenAttributes);
+
+            // act
+            bool result = left.Equals(right);
+
+            // assert
+            Assert.IsTrue(result);
+        }
+
+        [Test]
+        public void Equals_SameLeafButDifferentParentScope_ReturnsFalse()
+        {
+            // arrange
+            const string leafScope = "leaf";
+            const int leafTokenAttributes = 2;
+
+            AttributedScopeStack left = new AttributedScopeStack(
+                new AttributedScopeStack(null, "parent.a", 1),
+                leafScope,
+                leafTokenAttributes);
+
+            AttributedScopeStack right = new AttributedScopeStack(
+                new AttributedScopeStack(null, "parent.b", 1),
+                leafScope,
+                leafTokenAttributes);
+
+            // act
+            bool result = left.Equals(right);
+
+            // assert
+            Assert.IsFalse(result);
+        }
+
+        [Test]
+        public void Equals_SameLeafButDifferentParentTokenAttributes_ReturnsFalse()
+        {
+            // arrange
+            const string parentScope = "parent";
+            const string leafScope = "leaf";
+            const int leafTokenAttributes = 2;
+
+            AttributedScopeStack left = new AttributedScopeStack(
+                new AttributedScopeStack(null, parentScope, 111),
+                leafScope,
+                leafTokenAttributes);
+
+            AttributedScopeStack right = new AttributedScopeStack(
+                new AttributedScopeStack(null, parentScope, 222),
+                leafScope,
+                leafTokenAttributes);
+
+            // act
+            bool result = left.Equals(right);
+
+            // assert
+            Assert.IsFalse(result);
+        }
+
+        [Test]
+        public void Equals_LeftChainEndsFirst_ReturnsFalse()
+        {
+            // arrange
+            const string leafScopePath = "leaf";
+            const int leafTokenAttributes = 2;
+
+            const string parentScopePath = "parent";
+            const int parentTokenAttributes = 1;
+
+            AttributedScopeStack shorter = new AttributedScopeStack(null, leafScopePath, leafTokenAttributes);
+            AttributedScopeStack longer = new AttributedScopeStack(
+                new AttributedScopeStack(null, parentScopePath, parentTokenAttributes),
+                leafScopePath,
+                leafTokenAttributes);
+
+            // act
+            bool result = shorter.Equals(longer);
+
+            // assert
+            Assert.IsFalse(result);
+        }
+
+        [Test]
+        public void Equals_RightChainEndsFirst_ReturnsFalse()
+        {
+            // arrange
+            const string leafScopePath = "leaf";
+            const int leafTokenAttributes = 2;
+
+            const string parentScopePath = "parent";
+            const int parentTokenAttributes = 1;
+
+            AttributedScopeStack longer = new AttributedScopeStack(
+                new AttributedScopeStack(null, parentScopePath, parentTokenAttributes),
+                leafScopePath,
+                leafTokenAttributes);
+
+            AttributedScopeStack shorter = new AttributedScopeStack(null, leafScopePath, leafTokenAttributes);
+
+            // act
+            bool result = longer.Equals(shorter);
+
+            // assert
+            Assert.IsFalse(result);
+        }
+
+        [Test]
+        public void Equals_PrivateStatic_FirstArgumentNull_ReturnsFalse()
+        {
+            // arrange
+            MethodInfo equalsMethod = GetPrivateStaticEqualsMethod();
+            AttributedScopeStack b = new AttributedScopeStack(null, "x", 1);
+
+            // act
+            object result = equalsMethod.Invoke(null, new object[] { null, b });
+
+            // assert
+            Assert.NotNull(result);
+            Assert.IsFalse((bool)result);
+        }
+
+        [Test]
+        public void Equals_PrivateStatic_SecondArgumentNull_ReturnsFalse()
+        {
+            // arrange
+            MethodInfo equalsMethod = GetPrivateStaticEqualsMethod();
+            AttributedScopeStack a = new AttributedScopeStack(null, "x", 1);
+
+            // act
+            object result = equalsMethod.Invoke(null, new object[] { a, null });
+
+            // assert
+            Assert.NotNull(result);
+            Assert.IsFalse((bool)result);
+        }
+
+        [Test]
+        public void Equals_PrivateStatic_BothArgumentsNull_ReturnsTrue()
+        {
+            // arrange
+            MethodInfo equalsMethod = GetPrivateStaticEqualsMethod();
+
+            // act
+            object result = equalsMethod.Invoke(null, new object[] { null, null });
+
+            // assert
+            Assert.NotNull(result);
+            Assert.IsTrue((bool)result);
+        }
+
+        // Normal call paths cannot hit the branches of the static Equals impl, so I'm adding this reflection-based
+        // helper to help improve the test coverage and cover the branches that cannot otherwise be executed.
+        private static MethodInfo GetPrivateStaticEqualsMethod()
+        {
+            Type type = typeof(AttributedScopeStack);
+            Type[] parameterTypes = new Type[] { typeof(AttributedScopeStack), typeof(AttributedScopeStack) };
+
+            MethodInfo methodInfo = type.GetMethod(
+                nameof(Equals),
+                BindingFlags.NonPublic | BindingFlags.Static,
+                null,
+                parameterTypes,
+                null);
+
+            Assert.IsNotNull(methodInfo);
+            return methodInfo;
+        }
+
+        #endregion Equals tests
+
+        #region GetHashCode tests
+
+        [Test]
+        public void GetHashCode_WhenParentIsNull_DoesNotThrow_AndIsDeterministic()
+        {
+            // arrange
+            AttributedScopeStack root = new AttributedScopeStack(null, "root", 1);
+
+            // act
+            int first = root.GetHashCode();
+            int second = root.GetHashCode();
+
+            // assert
+            Assert.AreEqual(first, second);
+        }
+
+        [Test]
+        public void GetHashCode_WhenScopePathIsNull_DoesNotThrow_AndIsDeterministic()
+        {
+            // arrange
+            AttributedScopeStack stack = new AttributedScopeStack(null, null, 1);
+
+            // act
+            int first = stack.GetHashCode();
+            int second = stack.GetHashCode();
+
+            // assert
+            Assert.AreEqual(first, second);
+        }
+
+        [Test]
+        public void GetHashCode_WhenStacksAreEqual_ReturnsSameValue()
+        {
+            // arrange
+            AttributedScopeStack left = CreateStack(("a", 1), ("b", 2), ("c", 3));
+            AttributedScopeStack right = CreateStack(("a", 1), ("b", 2), ("c", 3));
+
+            // act
+            bool isEqual = left.Equals((object)right);
+            int leftHashCode = left.GetHashCode();
+            int rightHashCode = right.GetHashCode();
+
+            // assert
+            Assert.IsTrue(isEqual);
+            Assert.AreEqual(leftHashCode, rightHashCode);
+        }
+
+        [Test]
+        public void GetHashCode_WhenUsedAsDictionaryKey_AllowsLookupUsingEqualStack()
+        {
+            // arrange
+            AttributedScopeStack key1 = CreateStack(("a", 1), ("b", 2));
+            AttributedScopeStack key2 = CreateStack(("a", 1), ("b", 2));
+
+            Dictionary<AttributedScopeStack, string> dictionary = new Dictionary<AttributedScopeStack, string>
+            {
+                [key1] = "VALUE"
+            };
+
+            // act
+            bool found = dictionary.TryGetValue(key2, out string value);
+
+            // assert
+            Assert.IsTrue(found);
+            Assert.AreEqual("VALUE", value);
+        }
+
+        [Test]
+        public void GetHashCode_WhenStacksDifferAtAnyFrame_ReturnsDifferentValue_SanityCheck()
+        {
+            // arrange
+            AttributedScopeStack left = CreateStack(("a", 1), ("b", 2), ("c", 3));
+            AttributedScopeStack right = CreateStack(("a", 1), ("b", 2), ("x", 3));
+
+            // act
+            int leftHashCode = left.GetHashCode();
+            int rightHashCode = right.GetHashCode();
+
+            // assert
+            // Collisions are allowed, so this is a sanity check rather than a strict contract test.
+            Assert.AreNotEqual(leftHashCode, rightHashCode);
+        }
+
+        [Test]
+        public void GetHashCode_WhenStackIsDeep_DoesNotThrow_AndIsDeterministic()
+        {
+            // arrange
+            const int depth = 10_000;
+
+            AttributedScopeStack current = null;
+            for (int i = 0; i < depth; i++)
+            {
+                current = new AttributedScopeStack(current, "s" + i, i);
+            }
+
+            // act
+            int first = current!.GetHashCode();
+            int second = current.GetHashCode();
+
+            // assert
+            Assert.AreEqual(first, second);
+        }
+
+        #endregion GetHashCode tests
+
+        #region GetScopeNames tests
+
+        [Test]
+        public void GetScopeNames_ReturnsRootToLeaf()
+        {
+            // arrange
+            AttributedScopeStack stack = CreateStack(("a", 1), ("b", 2), ("c", 3));
+
+            // act
+            List<string> scopes = stack.GetScopeNames();
+
+            // assert
+            Assert.AreEqual(3, scopes.Count);
+            Assert.AreEqual("a", scopes[0]);
+            Assert.AreEqual("b", scopes[1]);
+            Assert.AreEqual("c", scopes[2]);
+        }
+
+        [Test]
+        public void GetScopeNames_IsCached_ReturnsSameListInstance()
+        {
+            // arrange
+            AttributedScopeStack stack = CreateStack(("a", 1), ("b", 2));
+
+            // act
+            List<string> first = stack.GetScopeNames();
+            List<string> second = stack.GetScopeNames();
+
+            // assert
+            Assert.AreSame(first, second);
+        }
+
+        [Test]
+        public void GetScopeNames_CacheIsMutable_MutationsPersistAcrossCalls()
+        {
+            // arrange
+            AttributedScopeStack stack = CreateStack(("a", 1), ("b", 2));
+            List<string> first = stack.GetScopeNames();
+
+            // act
+            first.Add("MUTATION");
+            List<string> second = stack.GetScopeNames();
+
+            // assert
+            Assert.AreSame(first, second);
+            Assert.AreEqual(3, second.Count);
+            Assert.AreEqual("MUTATION", second[2]);
+        }
+
+        [Test]
+        public void GetScopeNames_LongChain_ReturnsCorrectCountAndEndpoints()
+        {
+            // arrange
+            const int count = 2_000;
+            AttributedScopeStack current = null;
+            for (int i = 0; i < count; i++)
+            {
+                current = new AttributedScopeStack(current, "s" + i, i);
+            }
+
+            // act
+            List<string> scopes = current!.GetScopeNames();
+
+            // assert
+            Assert.AreEqual(count, scopes.Count);
+            Assert.AreEqual("s0", scopes[0]);
+            Assert.AreEqual("s" + (count - 1), scopes[count - 1]);
+        }
+
+        #endregion GetScopeNames tests
+
+        #region MergeAttributes tests
+
+        [Test]
+        public void MergeAttributes_NullBasicScopeAttributes_ReturnsExisting()
+        {
+            // arrange
+            int existing = CreateNonDefaultEncodedMetadata();
+
+            // act
+            int result = AttributedScopeStack.MergeAttributes(existing, null, null);
+
+            // assert
+            Assert.AreEqual(existing, result);
+        }
+
+        [Test]
+        public void MergeAttributes_ThemeDataNull_PreservesStyleAndColors_ButUpdatesLanguageAndTokenType()
+        {
+            // arrange
+            int existing = CreateNonDefaultEncodedMetadata();
+            AttributedScopeStack scopesList = new AttributedScopeStack(null, AnyScopePath, existing);
+            BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, null);
+
+            // act
+            int result = AttributedScopeStack.MergeAttributes(existing, scopesList, attrs);
+
+            // assert
+            Assert.AreEqual(NewLanguageId, EncodedTokenAttributes.GetLanguageId(result));
+            Assert.AreEqual(NewTokenType, EncodedTokenAttributes.GetTokenType(result));
+            Assert.AreEqual(ExistingFontStyle, EncodedTokenAttributes.GetFontStyle(result));
+            Assert.AreEqual(ExistingForeground, EncodedTokenAttributes.GetForeground(result));
+            Assert.AreEqual(ExistingBackground, EncodedTokenAttributes.GetBackground(result));
+        }
+
+        [Test]
+        public void MergeAttributes_ThemeDataEmpty_PreservesStyleAndColors_ButUpdatesLanguageAndTokenType()
+        {
+            // arrange
+            int existing = CreateNonDefaultEncodedMetadata();
+            AttributedScopeStack scopesList = new AttributedScopeStack(null, AnyScopePath, existing);
+
+            List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule>();
+            BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
+
+            // act
+            int result = AttributedScopeStack.MergeAttributes(existing, scopesList, attrs);
+
+            // assert
+            Assert.AreEqual(NewLanguageId, EncodedTokenAttributes.GetLanguageId(result));
+            Assert.AreEqual(NewTokenType, EncodedTokenAttributes.GetTokenType(result));
+            Assert.AreEqual(ExistingFontStyle, EncodedTokenAttributes.GetFontStyle(result));
+            Assert.AreEqual(ExistingForeground, EncodedTokenAttributes.GetForeground(result));
+            Assert.AreEqual(ExistingBackground, EncodedTokenAttributes.GetBackground(result));
+        }
+
+        [Test]
+        public void MergeAttributes_FirstRuleWithNullParentScopes_IsAlwaysSelected()
+        {
+            // arrange
+            int existing = CreateNonDefaultEncodedMetadata();
+
+            AttributedScopeStack scopesList = CreateStack(
+                ("source.csharp", existing),
+                ("meta.using", existing));
+
+            const int rule1ScopeDepth = 1;
+            const int rule1Foreground = 11;
+            const int rule1Background = 12;
+            const FontStyle rule1FontStyle = FontStyle.Italic;
+
+            ThemeTrieElementRule rule1 = new ThemeTrieElementRule("r1", rule1ScopeDepth, null, rule1FontStyle, rule1Foreground, rule1Background);
+
+            List<string> rule2ParentScopes = new List<string> { "nonexistent" };
+            ThemeTrieElementRule rule2 = new ThemeTrieElementRule("r2", 1, rule2ParentScopes, FontStyle.Underline, 99, 98);
+
+            List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { rule1, rule2 };
+            BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
+
+            // act
+            int result = AttributedScopeStack.MergeAttributes(existing, scopesList, attrs);
+
+            // assert
+            Assert.AreEqual(rule1FontStyle, EncodedTokenAttributes.GetFontStyle(result));
+            Assert.AreEqual(rule1Foreground, EncodedTokenAttributes.GetForeground(result));
+            Assert.AreEqual(rule1Background, EncodedTokenAttributes.GetBackground(result));
+        }
+
+        [Test]
+        public void MergeAttributes_FirstRuleDoesNotMatch_SecondRuleMatchesByOrderedParentScopes()
+        {
+            // arrange
+            int existing = CreateNonDefaultEncodedMetadata();
+
+            AttributedScopeStack scopesList = CreateStack(
+                ("source.csharp", existing),
+                ("meta.using", existing),
+                ("keyword.control", existing));
+
+            // rule1 should NOT match
+            List<string> rule1ParentScopes = new List<string> { "source.csharp", "meta.using" };
+            ThemeTrieElementRule rule1 = new ThemeTrieElementRule("r1", 1, rule1ParentScopes, FontStyle.Italic, 11, 12);
+
+            const int rule2Foreground = 21;
+            const int rule2Background = 22;
+            const FontStyle rule2FontStyle = FontStyle.Underline;
+
+            // rule2 SHOULD match
+            List<string> rule2ParentScopes = new List<string> { "meta.using", "source.csharp" };
+            ThemeTrieElementRule rule2 = new ThemeTrieElementRule("r2", 1, rule2ParentScopes, rule2FontStyle, rule2Foreground, rule2Background);
+
+            List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { rule1, rule2 };
+            BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
+
+            // act
+            int result = AttributedScopeStack.MergeAttributes(existing, scopesList, attrs);
+
+            // assert
+            Assert.AreEqual(rule2FontStyle, EncodedTokenAttributes.GetFontStyle(result));
+            Assert.AreEqual(rule2Foreground, EncodedTokenAttributes.GetForeground(result));
+            Assert.AreEqual(rule2Background, EncodedTokenAttributes.GetBackground(result));
+        }
+
+        [Test]
+        public void MergeAttributes_FirstMatchingRuleWins_WhenMultipleRulesMatch()
+        {
+            // Arrange
+            int existing = CreateNonDefaultEncodedMetadata();
+
+            AttributedScopeStack scopesList = CreateStack(
+                ("source.csharp", existing),
+                ("meta.using", existing),
+                ("keyword.control", existing));
+
+            ThemeTrieElementRule rule1 = new ThemeTrieElementRule("r1", 1, null, FontStyle.Italic, 11, 12);
+            ThemeTrieElementRule rule2 = new ThemeTrieElementRule("r2", 1, null, FontStyle.Underline, 21, 22);
+
+            List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { rule1, rule2 };
+            BasicScopeAttributes attrs = new BasicScopeAttributes(9, 2, themeData);
+
+            // Act
+            int result = AttributedScopeStack.MergeAttributes(existing, scopesList, attrs);
+
+            // Assert
+            Assert.AreEqual(FontStyle.Italic, EncodedTokenAttributes.GetFontStyle(result));
+            Assert.AreEqual(11, EncodedTokenAttributes.GetForeground(result));
+            Assert.AreEqual(12, EncodedTokenAttributes.GetBackground(result));
+        }
+
+        [Test]
+        public void MergeAttributes_ParentScopeSelectorPrefix_MatchesDotSeparatedScope()
+        {
+            // arrange
+            int existing = CreateNonDefaultEncodedMetadata();
+
+            AttributedScopeStack scopesList = CreateStack(
+                ("source.csharp", existing),
+                ("meta.block", existing),
+                ("keyword.control", existing));
+
+            const int expectedForeground = 31;
+            const int expectedBackground = 32;
+            const FontStyle expectedFontStyle = FontStyle.Italic;
+
+            List<string> parentScopes = new List<string> { "meta" };
+            ThemeTrieElementRule rule = new ThemeTrieElementRule("prefix-parent", 1, parentScopes, expectedFontStyle, expectedForeground, expectedBackground);
+
+            List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { rule };
+            BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
+
+            // act
+            int result = AttributedScopeStack.MergeAttributes(existing, scopesList, attrs);
+
+            // assert
+            Assert.AreEqual(expectedFontStyle, EncodedTokenAttributes.GetFontStyle(result));
+            Assert.AreEqual(expectedForeground, EncodedTokenAttributes.GetForeground(result));
+            Assert.AreEqual(expectedBackground, EncodedTokenAttributes.GetBackground(result));
+        }
+
+        [Test]
+        public void MergeAttributes_EmptyParentScopesList_ThrowsArgumentOutOfRangeException()
+        {
+            // arrange
+            int existing = CreateNonDefaultEncodedMetadata();
+            AttributedScopeStack scopesList = new AttributedScopeStack(null, AnyScopePath, existing);
+
+            List<string> emptyParentScopes = new List<string>();
+            ThemeTrieElementRule rule = new ThemeTrieElementRule("empty-parents", 1, emptyParentScopes, FontStyle.Italic, 11, 12);
+
+            List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { rule };
+            BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
+
+            // act/assert
+            Assert.Throws<ArgumentOutOfRangeException>(() => AttributedScopeStack.MergeAttributes(existing, scopesList, attrs));
+        }
+
+        [Test]
+        public void MergeAttributes_RuleFontStyleNotSet_PreservesExistingFontStyle()
+        {
+            // arrange
+            int existing = CreateNonDefaultEncodedMetadata();
+            AttributedScopeStack scopesList = new AttributedScopeStack(null, AnyScopePath, existing);
+
+            const int expectedForeground = 123;
+            const int expectedBackground = 124;
+
+            ThemeTrieElementRule rule = new ThemeTrieElementRule("preserve-style", 1, null, FontStyle.NotSet, expectedForeground, expectedBackground);
+
+            List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { rule };
+            BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
+
+            // act
+            int result = AttributedScopeStack.MergeAttributes(existing, scopesList, attrs);
+
+            // assert
+            Assert.AreEqual(ExistingFontStyle, EncodedTokenAttributes.GetFontStyle(result));
+            Assert.AreEqual(expectedForeground, EncodedTokenAttributes.GetForeground(result));
+            Assert.AreEqual(expectedBackground, EncodedTokenAttributes.GetBackground(result));
+        }
+
+        [Test]
+        public void MergeAttributes_RuleForegroundZero_PreservesExistingForeground()
+        {
+            // arrange
+            int existing = CreateNonDefaultEncodedMetadata();
+            AttributedScopeStack scopesList = new AttributedScopeStack(null, AnyScopePath, existing);
+
+            const int expectedBackground = 124;
+            const FontStyle expectedFontStyle = FontStyle.Italic;
+
+            ThemeTrieElementRule rule = new ThemeTrieElementRule("preserve-fg", 1, null, expectedFontStyle, 0, expectedBackground);
+
+            List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { rule };
+            BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
+
+            // act
+            int result = AttributedScopeStack.MergeAttributes(existing, scopesList, attrs);
+
+            // assert
+            Assert.AreEqual(expectedFontStyle, EncodedTokenAttributes.GetFontStyle(result));
+            Assert.AreEqual(ExistingForeground, EncodedTokenAttributes.GetForeground(result));
+            Assert.AreEqual(expectedBackground, EncodedTokenAttributes.GetBackground(result));
+        }
+
+        [Test]
+        public void MergeAttributes_RuleBackgroundZero_PreservesExistingBackground()
+        {
+            // arrange
+            int existing = CreateNonDefaultEncodedMetadata();
+            AttributedScopeStack scopesList = new AttributedScopeStack(null, AnyScopePath, existing);
+
+            const int expectedForeground = 123;
+            const FontStyle expectedFontStyle = FontStyle.Italic;
+
+            ThemeTrieElementRule rule = new ThemeTrieElementRule("preserve-bg", 1, null, expectedFontStyle, expectedForeground, 0);
+
+            List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { rule };
+            BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
+
+            // act
+            int result = AttributedScopeStack.MergeAttributes(existing, scopesList, attrs);
+
+            // assert
+            Assert.AreEqual(expectedFontStyle, EncodedTokenAttributes.GetFontStyle(result));
+            Assert.AreEqual(expectedForeground, EncodedTokenAttributes.GetForeground(result));
+            Assert.AreEqual(ExistingBackground, EncodedTokenAttributes.GetBackground(result));
+        }
+
+        [Test]
+        public void MergeAttributes_LanguageIdZero_PreservesExistingLanguageId()
+        {
+            // arrange
+            int existing = CreateNonDefaultEncodedMetadata();
+            AttributedScopeStack scopesList = new AttributedScopeStack(null, AnyScopePath, existing);
+            BasicScopeAttributes attrs = new BasicScopeAttributes(0, NewTokenType, null);
+
+            // act
+            int result = AttributedScopeStack.MergeAttributes(existing, scopesList, attrs);
+
+            // assert
+            Assert.AreEqual(ExistingLanguageId, EncodedTokenAttributes.GetLanguageId(result));
+        }
+
+        [Test]
+        public void MergeAttributes_NoRuleMatches_PreservesExistingStyleAndColors_ButUpdatesLanguageAndTokenType()
+        {
+            // arrange
+            int existing = CreateNonDefaultEncodedMetadata();
+
+            AttributedScopeStack scopesList = CreateStack(
+                ("source.csharp", existing),
+                ("meta.using", existing),
+                ("keyword.control", existing));
+
+            List<string> nonMatchingParentScopes = new List<string> { "does.not.exist" };
+            ThemeTrieElementRule nonMatchingRule = new ThemeTrieElementRule("non-match", 1, nonMatchingParentScopes, FontStyle.Italic, 200, 201);
+
+            List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { nonMatchingRule };
+            BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
+
+            // act
+            int result = AttributedScopeStack.MergeAttributes(existing, scopesList, attrs);
+
+            // assert
+            Assert.AreEqual(NewLanguageId, EncodedTokenAttributes.GetLanguageId(result));
+            Assert.AreEqual(NewTokenType, EncodedTokenAttributes.GetTokenType(result));
+            Assert.AreEqual(ExistingFontStyle, EncodedTokenAttributes.GetFontStyle(result));
+            Assert.AreEqual(ExistingForeground, EncodedTokenAttributes.GetForeground(result));
+            Assert.AreEqual(ExistingBackground, EncodedTokenAttributes.GetBackground(result));
+        }
+
+        [Test]
+        public void MergeAttributes_ScopesListNull_RuleWithParentScopes_DoesNotMatch()
+        {
+            // arrange
+            int existing = CreateNonDefaultEncodedMetadata();
+
+            List<string> parentScopes = new List<string> { "source.csharp" };
+            ThemeTrieElementRule rule = new ThemeTrieElementRule("requires-parent", 1, parentScopes, FontStyle.Italic, 200, 201);
+
+            List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { rule };
+            BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
+
+            // act
+            int result = AttributedScopeStack.MergeAttributes(existing, null, attrs);
+
+            // assert
+            Assert.AreEqual(NewLanguageId, EncodedTokenAttributes.GetLanguageId(result));
+            Assert.AreEqual(NewTokenType, EncodedTokenAttributes.GetTokenType(result));
+            Assert.AreEqual(ExistingFontStyle, EncodedTokenAttributes.GetFontStyle(result));
+            Assert.AreEqual(ExistingForeground, EncodedTokenAttributes.GetForeground(result));
+            Assert.AreEqual(ExistingBackground, EncodedTokenAttributes.GetBackground(result));
+        }
+
+        [Test]
+        public void MergeAttributes_PrefixSelector_DoesNotMatch_WhenScopeDoesNotHaveDotBoundary()
+        {
+            // arrange
+            int existing = CreateNonDefaultEncodedMetadata();
+
+            AttributedScopeStack scopesList = CreateStack(
+                ("source.csharp", existing),
+                ("metadata.block", existing));
+
+            // selector "meta" should match "meta.something" but NOT "metadata.something"
+            List<string> parentScopes = new List<string> { "meta" };
+            ThemeTrieElementRule rule = new ThemeTrieElementRule("prefix-dot-boundary", 1, parentScopes, FontStyle.Italic, 200, 201);
+
+            List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { rule };
+            BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
+
+            // act
+            int result = AttributedScopeStack.MergeAttributes(existing, scopesList, attrs);
+
+            // assert
+            Assert.AreEqual(NewLanguageId, EncodedTokenAttributes.GetLanguageId(result));
+            Assert.AreEqual(NewTokenType, EncodedTokenAttributes.GetTokenType(result));
+            Assert.AreEqual(ExistingFontStyle, EncodedTokenAttributes.GetFontStyle(result));
+            Assert.AreEqual(ExistingForeground, EncodedTokenAttributes.GetForeground(result));
+            Assert.AreEqual(ExistingBackground, EncodedTokenAttributes.GetBackground(result));
+        }
+
+        [Test]
+        public void MergeAttributes_ParentScopesMatchNonContiguously_Works()
+        {
+            // arrange
+            int existing = CreateNonDefaultEncodedMetadata();
+
+            // leaf -> root traversal will be: c, x, b, y, a
+            AttributedScopeStack scopesList = CreateStack(
+                ("a", existing),
+                ("y", existing),
+                ("b", existing),
+                ("x", existing),
+                ("c", existing));
+
+            // match "b" then later "a" (non-contiguous)
+            List<string> parentScopes = new List<string> { "b", "a" };
+            const int expectedForeground = 210;
+            const int expectedBackground = 211;
+            const FontStyle expectedFontStyle = FontStyle.Underline;
+
+            ThemeTrieElementRule rule = new ThemeTrieElementRule("non-contiguous", 1, parentScopes, expectedFontStyle, expectedForeground, expectedBackground);
+
+            List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { rule };
+            BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
+
+            // act
+            int result = AttributedScopeStack.MergeAttributes(existing, scopesList, attrs);
+
+            // assert
+            Assert.AreEqual(expectedFontStyle, EncodedTokenAttributes.GetFontStyle(result));
+            Assert.AreEqual(expectedForeground, EncodedTokenAttributes.GetForeground(result));
+            Assert.AreEqual(expectedBackground, EncodedTokenAttributes.GetBackground(result));
+        }
+
+        [Test]
+        public void MergeAttributes_PreservesBalancedBracketsBit_WhenContainsBalancedBracketsIsNull()
+        {
+            // arrange
+            const int existingLanguageId = ExistingLanguageId;
+            const int existingTokenType = ExistingTokenType;
+            const FontStyle existingFontStyle = ExistingFontStyle;
+            const int existingForeground = ExistingForeground;
+            const int existingBackground = ExistingBackground;
+
+            int existing = EncodedTokenAttributes.Set(
+                0,
+                existingLanguageId,
+                existingTokenType,
+                true,
+                existingFontStyle,
+                existingForeground,
+                existingBackground);
+
+            Assert.IsTrue(EncodedTokenAttributes.ContainsBalancedBrackets(existing));
+
+            AttributedScopeStack scopesList = new AttributedScopeStack(null, AnyScopePath, existing);
+
+            // ThemeData null => MergeAttributes passes containsBalancedBrackets as null into EncodedTokenAttributes.Set (preserve existing).
+            BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, null);
+
+            // act
+            int result = AttributedScopeStack.MergeAttributes(existing, scopesList, attrs);
+
+            // assert
+            Assert.IsTrue(EncodedTokenAttributes.ContainsBalancedBrackets(result));
+        }
+
+        [Test]
+        public void MergeAttributes_WhenScopesListContainsNullScopePath_DoesNotThrow_AndRuleDoesNotMatch()
+        {
+            // arrange
+            int existing = CreateNonDefaultEncodedMetadata();
+
+            AttributedScopeStack scopesList = CreateStack(
+                ("source.csharp", existing),
+                (null, existing),
+                ("keyword.control", existing));
+
+            List<string> parentScopes = new List<string> { "meta" };
+            ThemeTrieElementRule rule = new ThemeTrieElementRule("null-scopepath", 1, parentScopes, FontStyle.Italic, 11, 12);
+
+            List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { rule };
+            BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
+
+            // act
+            int result = AttributedScopeStack.MergeAttributes(existing, scopesList, attrs);
+
+            // assert
+            Assert.AreEqual(NewLanguageId, EncodedTokenAttributes.GetLanguageId(result));
+            Assert.AreEqual(NewTokenType, EncodedTokenAttributes.GetTokenType(result));
+            Assert.AreEqual(ExistingFontStyle, EncodedTokenAttributes.GetFontStyle(result));
+            Assert.AreEqual(ExistingForeground, EncodedTokenAttributes.GetForeground(result));
+            Assert.AreEqual(ExistingBackground, EncodedTokenAttributes.GetBackground(result));
+        }
+
+        #endregion MergeAttributes tests
+
+        #region PushAttributed tests
+
+        [Test]
+        public void PushAttributed_NullScopePath_ReturnsSameInstance()
+        {
+            // arrange
+            AttributedScopeStack stack = CreateStack(("a", 1), ("b", 2));
+
+            // act
+            AttributedScopeStack result = stack.PushAtributed(null, null);
+
+            // assert
+            Assert.AreSame(stack, result);
+        }
+
+        [Test]
+        public void PushAttributed_NonNullScope_WithNullGrammar_ThrowsArgumentNullException()
+        {
+            // arrange
+            AttributedScopeStack stack = CreateStack(("a", 1));
+
+            // act/assert
+            Assert.Throws<ArgumentNullException>(() => stack.PushAtributed("b", null));
+        }
+
+        [Test]
+        public void PushAttributed_MultiScope_WithNullGrammar_ThrowsArgumentNullException()
+        {
+            // arrange
+            AttributedScopeStack stack = CreateStack(("a", 1));
+
+            // act/assert
+            Assert.Throws<ArgumentNullException>(() => stack.PushAtributed("b c", null));
+        }
+
+        [Test]
+        public void PushAttributed_EmptyStringScope_WithNullGrammar_ThrowsArgumentNullException()
+        {
+            // arrange
+            AttributedScopeStack stack = CreateStack(("a", 1));
+
+            // act/assert
+            Assert.Throws<ArgumentNullException>(() => stack.PushAtributed("", null));
+        }
+
+        #endregion PushAttributed tests
+
+        #region Helpers
+
+        private static AttributedScopeStack CreateStack(params (string ScopePath, int TokenAttributes)[] frames)
+        {
+            AttributedScopeStack current = null;
+            for (int i = 0; i < frames.Length; i++)
+            {
+                (string ScopePath, int TokenAttributes) frame = frames[i];
+                current = new AttributedScopeStack(current, frame.ScopePath, frame.TokenAttributes);
+            }
+
+            return current;
+        }
+
+        private static int CreateNonDefaultEncodedMetadata()
+        {
+            // Choose non-default values so EncodedTokenAttributes.Set "preserve existing" behavior is observable.
+            return EncodedTokenAttributes.Set(
+                0,
+                ExistingLanguageId,
+                ExistingTokenType,
+                null,
+                ExistingFontStyle,
+                ExistingForeground,
+                ExistingBackground);
+        }
+
+        #endregion Helpers
     }
 }
