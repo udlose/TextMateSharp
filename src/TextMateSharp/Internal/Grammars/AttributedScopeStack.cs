@@ -11,14 +11,16 @@ namespace TextMateSharp.Internal.Grammars
         public string ScopePath { get; private set; }
         public int TokenAttributes { get; private set; }
         private List<string> _cachedScopeNames;
-        private bool _hasCachedHashCode;
-        private int _cachedHashCode;
+
+        // Precomputed, per-node hash code (persistent structure => safe as long as instances are immutable)
+        private readonly int _hashCode;
 
         public AttributedScopeStack(AttributedScopeStack parent, string scopePath, int tokenAttributes)
         {
             Parent = parent;
             ScopePath = scopePath;
             TokenAttributes = tokenAttributes;
+            _hashCode = ComputeHashCode(parent, scopePath, tokenAttributes);
         }
 
         private static bool StructuralEquals(AttributedScopeStack a, AttributedScopeStack b)
@@ -36,7 +38,8 @@ namespace TextMateSharp.Internal.Grammars
                     return false;
                 }
 
-                if (a.ScopePath != b.ScopePath || a.TokenAttributes != b.TokenAttributes)
+                if (!string.Equals(a.ScopePath, b.ScopePath, StringComparison.Ordinal) ||
+                    a.TokenAttributes != b.TokenAttributes)
                 {
                     return false;
                 }
@@ -62,65 +65,58 @@ namespace TextMateSharp.Internal.Grammars
 
         public override bool Equals(object other)
         {
-            if (other == null || !(other is AttributedScopeStack))
-                return false;
+            if (other is AttributedScopeStack attributedScopeStack)
+                return Equals(this, attributedScopeStack);
 
-            return Equals(this, (AttributedScopeStack)other);
+            return false;
         }
 
         public override int GetHashCode()
         {
-            if (_hasCachedHashCode)
-            {
-                return _cachedHashCode;
-            }
-
-            int computedHashCode = ComputeHashCode();
-            _cachedHashCode = computedHashCode;
-            _hasCachedHashCode = true;
-
-            return computedHashCode;
+            return _hashCode;
         }
 
-        private int ComputeHashCode()
+        private static int ComputeHashCode(AttributedScopeStack parent, string scopePath, int tokenAttributes)
         {
-            // adding for future implementation if/when support for .NET Standard 2.1 or .NET Core 2.1 is added, which includes System.HashCode
-#if NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER
-            HashCode hashCode = new HashCode();
-
-            AttributedScopeStack current = this;
-            while (current != null)
-            {
-                hashCode.Add(current.TokenAttributes);
-                hashCode.Add(current.ScopePath);
-                current = current.Parent;
-            }
-
-            return hashCode.ToHashCode();
-#else
             unchecked
             {
-                int hash = 17;
+                int hash = parent?._hashCode ?? 17;
+                hash = (hash * 31) + tokenAttributes;
 
-                AttributedScopeStack current = this;
-                while (current != null)
+                int scopeHashCode;
+                if (scopePath == null)
                 {
-                    hash = (hash * 31) + current.TokenAttributes;
-
-                    int scopeHashCode = current.ScopePath?.GetHashCode() ?? 0;
-                    hash = (hash * 31) + scopeHashCode;
-
-                    current = current.Parent;
+                    scopeHashCode = 0;
                 }
+                else
+                {
+                    scopeHashCode = StringComparer.Ordinal.GetHashCode(scopePath);
+                }
+
+                hash = (hash * 31) + scopeHashCode;
 
                 return hash;
             }
-#endif
         }
 
-        static bool MatchesScope(string scope, string selector, string selectorWithDot)
+        static bool MatchesScope(string scope, string selector)
         {
-            return (selector.Equals(scope) || scope.StartsWith(selectorWithDot));
+            if (scope == null || selector == null)
+            {
+                return false;
+            }
+
+            int selectorLen = selector.Length;
+            int scopeLen = scope.Length;
+
+            if (scopeLen == selectorLen)
+                return string.Equals(scope, selector, StringComparison.Ordinal);
+
+            // scope must be longer than selector and have a '.' immediately after the selector prefix
+            if (scopeLen > selectorLen && scope[selectorLen] == '.')
+                return string.CompareOrdinal(scope, 0, selector, 0, selectorLen) == 0;
+
+            return false;
         }
 
         static bool Matches(AttributedScopeStack target, List<string> parentScopes)
@@ -133,11 +129,10 @@ namespace TextMateSharp.Internal.Grammars
             int len = parentScopes.Count;
             int index = 0;
             string selector = parentScopes[index];
-            string selectorWithDot = selector + ".";
 
             while (target != null)
             {
-                if (MatchesScope(target.ScopePath, selector, selectorWithDot))
+                if (MatchesScope(target.ScopePath, selector))
                 {
                     index++;
                     if (index == len)
@@ -145,7 +140,6 @@ namespace TextMateSharp.Internal.Grammars
                         return true;
                     }
                     selector = parentScopes[index];
-                    selectorWithDot = selector + '.';
                 }
                 target = target.Parent;
             }
@@ -170,8 +164,10 @@ namespace TextMateSharp.Internal.Grammars
             if (basicScopeAttributes.ThemeData != null)
             {
                 // Find the first themeData that matches
-                foreach (ThemeTrieElementRule themeData in basicScopeAttributes.ThemeData)
+                List<ThemeTrieElementRule> themeDataList = basicScopeAttributes.ThemeData;
+                for (int i = 0; i < themeDataList.Count; i++)
                 {
+                    ThemeTrieElementRule themeData = themeDataList[i];
                     if (Matches(scopesList, themeData.parentScopes))
                     {
                         fontStyle = themeData.fontStyle;
@@ -192,13 +188,42 @@ namespace TextMateSharp.Internal.Grammars
                 background);
         }
 
-        private static AttributedScopeStack Push(AttributedScopeStack target, Grammar grammar, List<string> scopes)
+        private static AttributedScopeStack Push(AttributedScopeStack target, Grammar grammar, string scopePath)
         {
-            foreach (string scope in scopes)
+            ReadOnlySpan<char> remaining = scopePath.AsSpan();
+
+            // Use while(true) instead of while(remaining.Length > 0) to match
+            // StringSplitOptions.None behavior: if the string ends with a space, the final
+            // slice produces an empty span, and we must still push that empty segment
+            // (e.g. "a b " => push "a", "b", "")
+            while (true)
             {
-                target = PushSingleScope(target, grammar, scope);
+                int spaceIndex = remaining.IndexOf(' ');
+                if (spaceIndex < 0)
+                {
+                    target = PushSingleScope(target, grammar, GetScopeSlice(scopePath, remaining));
+                    break;
+                }
+
+                target = PushSingleScope(target, grammar, GetScopeSlice(scopePath, remaining.Slice(0, spaceIndex)));
+                remaining = remaining.Slice(spaceIndex + 1);
             }
             return target;
+        }
+
+        private static string GetScopeSlice(string scopePath, ReadOnlySpan<char> slice)
+        {
+            if (slice.IsEmpty)
+            {
+                return string.Empty;
+            }
+
+            if (slice.Length == scopePath.Length)
+            {
+                return scopePath;
+            }
+
+            return slice.ToString();
         }
 
         private static AttributedScopeStack PushSingleScope(AttributedScopeStack target, Grammar grammar, string scope)
@@ -219,7 +244,7 @@ namespace TextMateSharp.Internal.Grammars
             if (scopePath.IndexOf(' ') >= 0)
             {
                 // there are multiple scopes to push
-                return Push(this, grammar, new List<string>(scopePath.Split(new[] {" "}, StringSplitOptions.None)));
+                return Push(this, grammar, scopePath);
             }
             // there is a single scope to push - avoid List allocation
             return PushSingleScope(this, grammar, scopePath);
@@ -236,14 +261,26 @@ namespace TextMateSharp.Internal.Grammars
 
         private static List<string> GenerateScopes(AttributedScopeStack scopesList)
         {
-            List<string> result = new List<string>();
-            while (scopesList != null)
+            // First pass: count depth to pre-size the array
+            int depth = 0;
+            AttributedScopeStack current = scopesList;
+            while (current != null)
             {
-                result.Add(scopesList.ScopePath);
-                scopesList = scopesList.Parent;
+                depth++;
+                current = current.Parent;
             }
-            result.Reverse();
-            return result;
+
+            // Second pass: fill backwards directly to avoid a Reverse() call
+            string[] scopes = new string[depth];
+            current = scopesList;
+            for (int i = depth - 1; i >= 0; i--)
+            {
+                scopes[i] = current.ScopePath;
+                current = current.Parent;
+            }
+
+            // Construct list from the correctly-ordered array
+            return new List<string>(scopes);
         }
     }
 }

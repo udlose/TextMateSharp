@@ -1,8 +1,11 @@
+using Moq;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using TextMateSharp.Grammars;
 using TextMateSharp.Internal.Grammars;
+using TextMateSharp.Internal.Grammars.Parser;
 using TextMateSharp.Themes;
 
 namespace TextMateSharp.Tests.Internal.Grammars
@@ -690,10 +693,22 @@ namespace TextMateSharp.Tests.Internal.Grammars
             const int rule1Background = 12;
             const FontStyle rule1FontStyle = FontStyle.Italic;
 
-            ThemeTrieElementRule rule1 = new ThemeTrieElementRule("r1", rule1ScopeDepth, null, rule1FontStyle, rule1Foreground, rule1Background);
+            ThemeTrieElementRule rule1 = new ThemeTrieElementRule(
+                "r1",
+                rule1ScopeDepth,
+                null,
+                rule1FontStyle,
+                rule1Foreground,
+                rule1Background);
 
             List<string> rule2ParentScopes = new List<string> { "nonexistent" };
-            ThemeTrieElementRule rule2 = new ThemeTrieElementRule("r2", 1, rule2ParentScopes, FontStyle.Underline, 99, 98);
+            ThemeTrieElementRule rule2 = new ThemeTrieElementRule(
+                "r2",
+                1,
+                rule2ParentScopes,
+                FontStyle.Underline,
+                99,
+                98);
 
             List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { rule1, rule2 };
             BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
@@ -728,7 +743,13 @@ namespace TextMateSharp.Tests.Internal.Grammars
 
             // rule2 SHOULD match
             List<string> rule2ParentScopes = new List<string> { "meta.using", "source.csharp" };
-            ThemeTrieElementRule rule2 = new ThemeTrieElementRule("r2", 1, rule2ParentScopes, rule2FontStyle, rule2Foreground, rule2Background);
+            ThemeTrieElementRule rule2 = new ThemeTrieElementRule(
+                "r2",
+                1,
+                rule2ParentScopes,
+                rule2FontStyle,
+                rule2Foreground,
+                rule2Background);
 
             List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { rule1, rule2 };
             BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
@@ -784,7 +805,13 @@ namespace TextMateSharp.Tests.Internal.Grammars
             const FontStyle expectedFontStyle = FontStyle.Italic;
 
             List<string> parentScopes = new List<string> { "meta" };
-            ThemeTrieElementRule rule = new ThemeTrieElementRule("prefix-parent", 1, parentScopes, expectedFontStyle, expectedForeground, expectedBackground);
+            ThemeTrieElementRule rule = new ThemeTrieElementRule(
+                "prefix-parent",
+                1,
+                parentScopes,
+                expectedFontStyle,
+                expectedForeground,
+                expectedBackground);
 
             List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { rule };
             BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
@@ -798,21 +825,40 @@ namespace TextMateSharp.Tests.Internal.Grammars
             Assert.AreEqual(expectedBackground, EncodedTokenAttributes.GetBackground(result));
         }
 
+        // WARNING: BREAKING CHANGE. currently this throws ArgumentOutOfRangeException, but I'm changing it to allow
+        // empty parent scopes lists and treat them as "always matches" (similar to null parent scopes)
+        // in order to be more resilient to malformed theme data. If we want to maintain the old behavior
+        // of throwing on empty parent scopes, we should add an explicit check for that and throw
+        // before we get to the point of trying to match against the scopes list.
         [Test]
-        public void MergeAttributes_EmptyParentScopesList_ThrowsArgumentOutOfRangeException()
+        public void MergeAttributes_EmptyParentScopesList_PreservesExistingStyle()
         {
             // arrange
             int existing = CreateNonDefaultEncodedMetadata();
             AttributedScopeStack scopesList = new AttributedScopeStack(null, AnyScopePath, existing);
 
+            const int expectedForeground = 123;
+            const int expectedBackground = 124;
+
             List<string> emptyParentScopes = new List<string>();
-            ThemeTrieElementRule rule = new ThemeTrieElementRule("empty-parents", 1, emptyParentScopes, FontStyle.Italic, 11, 12);
+            ThemeTrieElementRule rule = new ThemeTrieElementRule(
+                "empty-parents",
+                1,
+                emptyParentScopes,
+                ExistingFontStyle,
+                expectedForeground,
+                expectedBackground);
 
             List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { rule };
             BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
 
-            // act/assert
-            Assert.Throws<ArgumentOutOfRangeException>(() => AttributedScopeStack.MergeAttributes(existing, scopesList, attrs));
+            // act
+            int result = AttributedScopeStack.MergeAttributes(existing, scopesList, attrs);
+
+            // assert
+            Assert.AreEqual(ExistingFontStyle, EncodedTokenAttributes.GetFontStyle(result));
+            Assert.AreEqual(expectedForeground, EncodedTokenAttributes.GetForeground(result));
+            Assert.AreEqual(expectedBackground, EncodedTokenAttributes.GetBackground(result));
         }
 
         [Test]
@@ -825,7 +871,14 @@ namespace TextMateSharp.Tests.Internal.Grammars
             const int expectedForeground = 123;
             const int expectedBackground = 124;
 
-            ThemeTrieElementRule rule = new ThemeTrieElementRule("preserve-style", 1, null, FontStyle.NotSet, expectedForeground, expectedBackground);
+            List<string> parentScopes = new List<string> { AnyScopePath };
+            ThemeTrieElementRule rule = new ThemeTrieElementRule(
+                "preserve-style",
+                1,
+                parentScopes,
+                FontStyle.NotSet,
+                expectedForeground,
+                expectedBackground);
 
             List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { rule };
             BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
@@ -849,7 +902,14 @@ namespace TextMateSharp.Tests.Internal.Grammars
             const int expectedBackground = 124;
             const FontStyle expectedFontStyle = FontStyle.Italic;
 
-            ThemeTrieElementRule rule = new ThemeTrieElementRule("preserve-fg", 1, null, expectedFontStyle, 0, expectedBackground);
+            List<string> parentScopes = new List<string> { AnyScopePath };
+            ThemeTrieElementRule rule = new ThemeTrieElementRule(
+                "preserve-fg",
+                1,
+                parentScopes,
+                expectedFontStyle,
+                0,
+                expectedBackground);
 
             List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { rule };
             BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
@@ -873,7 +933,13 @@ namespace TextMateSharp.Tests.Internal.Grammars
             const int expectedForeground = 123;
             const FontStyle expectedFontStyle = FontStyle.Italic;
 
-            ThemeTrieElementRule rule = new ThemeTrieElementRule("preserve-bg", 1, null, expectedFontStyle, expectedForeground, 0);
+            ThemeTrieElementRule rule = new ThemeTrieElementRule(
+                "preserve-bg",
+                1,
+                null,
+                expectedFontStyle,
+                expectedForeground,
+                0);
 
             List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { rule };
             BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
@@ -907,14 +973,19 @@ namespace TextMateSharp.Tests.Internal.Grammars
         {
             // arrange
             int existing = CreateNonDefaultEncodedMetadata();
-
             AttributedScopeStack scopesList = CreateStack(
                 ("source.csharp", existing),
                 ("meta.using", existing),
                 ("keyword.control", existing));
 
             List<string> nonMatchingParentScopes = new List<string> { "does.not.exist" };
-            ThemeTrieElementRule nonMatchingRule = new ThemeTrieElementRule("non-match", 1, nonMatchingParentScopes, FontStyle.Italic, 200, 201);
+            ThemeTrieElementRule nonMatchingRule = new ThemeTrieElementRule(
+                "non-match",
+                1,
+                nonMatchingParentScopes,
+                FontStyle.Italic,
+                200,
+                201);
 
             List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { nonMatchingRule };
             BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
@@ -937,7 +1008,13 @@ namespace TextMateSharp.Tests.Internal.Grammars
             int existing = CreateNonDefaultEncodedMetadata();
 
             List<string> parentScopes = new List<string> { "source.csharp" };
-            ThemeTrieElementRule rule = new ThemeTrieElementRule("requires-parent", 1, parentScopes, FontStyle.Italic, 200, 201);
+            ThemeTrieElementRule rule = new ThemeTrieElementRule(
+                "requires-parent",
+                1,
+                parentScopes,
+                FontStyle.Italic,
+                200,
+                201);
 
             List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { rule };
             BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
@@ -965,7 +1042,13 @@ namespace TextMateSharp.Tests.Internal.Grammars
 
             // selector "meta" should match "meta.something" but NOT "metadata.something"
             List<string> parentScopes = new List<string> { "meta" };
-            ThemeTrieElementRule rule = new ThemeTrieElementRule("prefix-dot-boundary", 1, parentScopes, FontStyle.Italic, 200, 201);
+            ThemeTrieElementRule rule = new ThemeTrieElementRule(
+                "prefix-dot-boundary",
+                1,
+                parentScopes,
+                FontStyle.Italic,
+                200,
+                201);
 
             List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { rule };
             BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
@@ -1001,7 +1084,13 @@ namespace TextMateSharp.Tests.Internal.Grammars
             const int expectedBackground = 211;
             const FontStyle expectedFontStyle = FontStyle.Underline;
 
-            ThemeTrieElementRule rule = new ThemeTrieElementRule("non-contiguous", 1, parentScopes, expectedFontStyle, expectedForeground, expectedBackground);
+            ThemeTrieElementRule rule = new ThemeTrieElementRule(
+                "non-contiguous",
+                1,
+                parentScopes,
+                expectedFontStyle,
+                expectedForeground,
+                expectedBackground);
 
             List<ThemeTrieElementRule> themeData = new List<ThemeTrieElementRule> { rule };
             BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, themeData);
@@ -1019,20 +1108,14 @@ namespace TextMateSharp.Tests.Internal.Grammars
         public void MergeAttributes_PreservesBalancedBracketsBit_WhenContainsBalancedBracketsIsNull()
         {
             // arrange
-            const int existingLanguageId = ExistingLanguageId;
-            const int existingTokenType = ExistingTokenType;
-            const FontStyle existingFontStyle = ExistingFontStyle;
-            const int existingForeground = ExistingForeground;
-            const int existingBackground = ExistingBackground;
-
             int existing = EncodedTokenAttributes.Set(
                 0,
-                existingLanguageId,
-                existingTokenType,
+                ExistingLanguageId,
+                ExistingTokenType,
                 true,
-                existingFontStyle,
-                existingForeground,
-                existingBackground);
+                ExistingFontStyle,
+                ExistingForeground,
+                ExistingBackground);
 
             Assert.IsTrue(EncodedTokenAttributes.ContainsBalancedBrackets(existing));
 
@@ -1053,7 +1136,6 @@ namespace TextMateSharp.Tests.Internal.Grammars
         {
             // arrange
             int existing = CreateNonDefaultEncodedMetadata();
-
             AttributedScopeStack scopesList = CreateStack(
                 ("source.csharp", existing),
                 (null, existing),
@@ -1077,6 +1159,118 @@ namespace TextMateSharp.Tests.Internal.Grammars
         }
 
         #endregion MergeAttributes tests
+
+        #region MatchesScope tests
+
+        [Test]
+        public void MergeAttributes_MatchesScope_NullScope_DoesNotMatch()
+        {
+            // arrange
+            int existing = CreateNonDefaultEncodedMetadata();
+            AttributedScopeStack scopesList = new AttributedScopeStack(null, null, existing);
+
+            List<string> parentScopes = new List<string> { "source" };
+            ThemeTrieElementRule rule = new ThemeTrieElementRule("null-scope", 1, parentScopes, FontStyle.Italic, 101, 102);
+            BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, new List<ThemeTrieElementRule> { rule });
+
+            // act
+            int result = AttributedScopeStack.MergeAttributes(existing, scopesList, attrs);
+
+            // assert
+            Assert.AreEqual(ExistingFontStyle, EncodedTokenAttributes.GetFontStyle(result));
+            Assert.AreEqual(ExistingForeground, EncodedTokenAttributes.GetForeground(result));
+            Assert.AreEqual(ExistingBackground, EncodedTokenAttributes.GetBackground(result));
+        }
+
+        [Test]
+        public void MergeAttributes_MatchesScope_NullSelector_DoesNotMatch()
+        {
+            // arrange
+            int existing = CreateNonDefaultEncodedMetadata();
+            AttributedScopeStack scopesList = new AttributedScopeStack(null, "source.js", existing);
+
+            List<string> parentScopes = new List<string> { null };
+            ThemeTrieElementRule rule = new ThemeTrieElementRule("null-selector", 1, parentScopes, FontStyle.Italic, 111, 112);
+            BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, new List<ThemeTrieElementRule> { rule });
+
+            // act
+            int result = AttributedScopeStack.MergeAttributes(existing, scopesList, attrs);
+
+            // assert
+            Assert.AreEqual(ExistingFontStyle, EncodedTokenAttributes.GetFontStyle(result));
+            Assert.AreEqual(ExistingForeground, EncodedTokenAttributes.GetForeground(result));
+            Assert.AreEqual(ExistingBackground, EncodedTokenAttributes.GetBackground(result));
+        }
+
+        [Test]
+        public void MergeAttributes_MatchesScope_ExactMatch_AppliesRule()
+        {
+            // arrange
+            int existing = CreateNonDefaultEncodedMetadata();
+            AttributedScopeStack scopesList = new AttributedScopeStack(null, "source.js", existing);
+
+            const int expectedForeground = 201;
+            const int expectedBackground = 202;
+            const FontStyle expectedFontStyle = FontStyle.Underline;
+
+            List<string> parentScopes = new List<string> { "source.js" };
+            ThemeTrieElementRule rule = new ThemeTrieElementRule("exact-match", 1, parentScopes, expectedFontStyle, expectedForeground, expectedBackground);
+            BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, new List<ThemeTrieElementRule> { rule });
+
+            // act
+            int result = AttributedScopeStack.MergeAttributes(existing, scopesList, attrs);
+
+            // assert
+            Assert.AreEqual(expectedFontStyle, EncodedTokenAttributes.GetFontStyle(result));
+            Assert.AreEqual(expectedForeground, EncodedTokenAttributes.GetForeground(result));
+            Assert.AreEqual(expectedBackground, EncodedTokenAttributes.GetBackground(result));
+        }
+
+        [Test]
+        public void MergeAttributes_MatchesScope_PrefixWithDot_AppliesRule()
+        {
+            // arrange
+            int existing = CreateNonDefaultEncodedMetadata();
+            AttributedScopeStack scopesList = new AttributedScopeStack(null, "source.js", existing);
+
+            const int expectedForeground = 211;
+            const int expectedBackground = 212;
+            const FontStyle expectedFontStyle = FontStyle.Italic;
+
+            List<string> parentScopes = new List<string> { "source" };
+            ThemeTrieElementRule rule = new ThemeTrieElementRule("prefix-dot", 1, parentScopes, expectedFontStyle, expectedForeground, expectedBackground);
+            BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, new List<ThemeTrieElementRule> { rule });
+
+            // act
+            int result = AttributedScopeStack.MergeAttributes(existing, scopesList, attrs);
+
+            // assert
+            Assert.AreEqual(expectedFontStyle, EncodedTokenAttributes.GetFontStyle(result));
+            Assert.AreEqual(expectedForeground, EncodedTokenAttributes.GetForeground(result));
+            Assert.AreEqual(expectedBackground, EncodedTokenAttributes.GetBackground(result));
+        }
+
+        [Test]
+        public void MergeAttributes_MatchesScope_PrefixWithoutDot_DoesNotMatch()
+        {
+            // arrange
+            int existing = CreateNonDefaultEncodedMetadata();
+            AttributedScopeStack scopesList = new AttributedScopeStack(null, "sourcejs", existing);
+
+            List<string> parentScopes = new List<string> { "source" };
+            ThemeTrieElementRule rule = new ThemeTrieElementRule("prefix-no-dot", 1, parentScopes, FontStyle.Italic, 221, 222);
+            BasicScopeAttributes attrs = new BasicScopeAttributes(NewLanguageId, NewTokenType, new List<ThemeTrieElementRule> { rule });
+
+            // act
+            int result = AttributedScopeStack.MergeAttributes(existing, scopesList, attrs);
+
+            // assert
+            Assert.AreEqual(ExistingFontStyle, EncodedTokenAttributes.GetFontStyle(result));
+            Assert.AreEqual(ExistingForeground, EncodedTokenAttributes.GetForeground(result));
+            Assert.AreEqual(ExistingBackground, EncodedTokenAttributes.GetBackground(result));
+        }
+
+        #endregion MatchesScope tests
 
         #region PushAttributed tests
 
@@ -1123,9 +1317,87 @@ namespace TextMateSharp.Tests.Internal.Grammars
             Assert.Throws<ArgumentNullException>(() => stack.PushAtributed("", null));
         }
 
+        [Test]
+        public void PushAttributed_ShouldHandleTrailingSpacesAndProduceEmptySegment()
+        {
+            // Arrange
+            TextMateSharp.Internal.Grammars.Grammar grammar = CreateTestGrammar();
+            AttributedScopeStack initial = new AttributedScopeStack(null, "root", 0);
+
+            // Act
+            AttributedScopeStack result = initial.PushAtributed("a b ", grammar);
+            List<string> scopes = result.GetScopeNames();
+
+            // Assert
+            CollectionAssert.AreEqual(new List<string> { "root", "a", "b", "" }, scopes);
+        }
+
+        [Test]
+        public void PushAttributed_MultiScope_ProducesSegments()
+        {
+            // Arrange
+            TextMateSharp.Internal.Grammars.Grammar grammar = CreateTestGrammar();
+            AttributedScopeStack initial = new AttributedScopeStack(null, "root", 0);
+
+            // Act
+            AttributedScopeStack result = initial.PushAtributed("a b", grammar);
+            List<string> scopes = result.GetScopeNames();
+
+            // Assert
+            CollectionAssert.AreEqual(new List<string> { "root", "a", "b" }, scopes);
+        }
+
+        [Test]
+        public void PushAttributed_SingleScope_PreservesScopeStringInstance()
+        {
+            // Arrange
+            TextMateSharp.Internal.Grammars.Grammar grammar = CreateTestGrammar();
+            AttributedScopeStack initial = new AttributedScopeStack(null, "root", 0);
+            const string scopePath = "single.scope";
+
+            // Act
+            AttributedScopeStack result = initial.PushAtributed(scopePath, grammar);
+
+            // Assert
+            Assert.AreSame(scopePath, result.ScopePath);
+        }
+
         #endregion PushAttributed tests
 
         #region Helpers
+
+        private static TextMateSharp.Internal.Grammars.Grammar CreateTestGrammar()
+        {
+            const string scopeName = "source.test";
+            Raw rawGrammar = new Raw
+            {
+                ["scopeName"] = scopeName
+            };
+
+            ThemeTrieElementRule defaults = new ThemeTrieElementRule(
+                "defaults",
+                0,
+                null,
+                ExistingFontStyle,
+                ExistingForeground,
+                ExistingBackground);
+
+            Mock<IThemeProvider> themeProvider = new Mock<IThemeProvider>();
+            themeProvider.Setup(provider => provider.GetDefaults()).Returns(defaults);
+            themeProvider
+                .Setup(provider => provider.ThemeMatch(It.IsAny<IList<string>>()))
+                .Returns(new List<ThemeTrieElementRule>());
+
+            return new TextMateSharp.Internal.Grammars.Grammar(
+                scopeName,
+                rawGrammar,
+                0,
+                null,
+                null,
+                new BalancedBracketSelectors(new List<string>(), new List<string>()),
+                new Mock<IGrammarRepository>().Object,
+                themeProvider.Object);
+        }
 
         private static AttributedScopeStack CreateStack(params (string ScopePath, int TokenAttributes)[] frames)
         {
