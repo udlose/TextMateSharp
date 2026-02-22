@@ -121,7 +121,7 @@ namespace TextMateSharp.Internal.Grammars
 
         static bool Matches(AttributedScopeStack target, List<string> parentScopes)
         {
-            if (parentScopes == null)
+            if (parentScopes == null || parentScopes.Count == 0)
             {
                 return true;
             }
