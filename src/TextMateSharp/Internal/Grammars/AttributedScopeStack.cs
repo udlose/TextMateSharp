@@ -11,6 +11,8 @@ namespace TextMateSharp.Internal.Grammars
         public string ScopePath { get; private set; }
         public int TokenAttributes { get; private set; }
         private List<string> _cachedScopeNames;
+        private bool _hasCachedHashCode;
+        private int _cachedHashCode;
 
         public AttributedScopeStack(AttributedScopeStack parent, string scopePath, int tokenAttributes)
         {
@@ -21,16 +23,10 @@ namespace TextMateSharp.Internal.Grammars
 
         private static bool StructuralEquals(AttributedScopeStack a, AttributedScopeStack b)
         {
-            do
+            while (true)
             {
                 if (a == b)
                 {
-                    return true;
-                }
-
-                if (a == null && b == null)
-                {
-                    // End of list reached for both
                     return true;
                 }
 
@@ -48,7 +44,7 @@ namespace TextMateSharp.Internal.Grammars
                 // Go to previous pair
                 a = a.Parent;
                 b = b.Parent;
-            } while (true);
+            }
         }
 
         private static bool Equals(AttributedScopeStack a, AttributedScopeStack b)
@@ -74,11 +70,53 @@ namespace TextMateSharp.Internal.Grammars
 
         public override int GetHashCode()
         {
-            return Parent.GetHashCode() +
-                   ScopePath.GetHashCode() +
-                   TokenAttributes.GetHashCode();
+            if (_hasCachedHashCode)
+            {
+                return _cachedHashCode;
+            }
+
+            int computedHashCode = ComputeHashCode();
+            _cachedHashCode = computedHashCode;
+            _hasCachedHashCode = true;
+
+            return computedHashCode;
         }
 
+        private int ComputeHashCode()
+        {
+            // adding for future implementation if/when support for .NET Standard 2.1 or .NET Core 2.1 is added, which includes System.HashCode
+#if NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+            HashCode hashCode = new HashCode();
+
+            AttributedScopeStack current = this;
+            while (current != null)
+            {
+                hashCode.Add(current.TokenAttributes);
+                hashCode.Add(current.ScopePath);
+                current = current.Parent;
+            }
+
+            return hashCode.ToHashCode();
+#else
+            unchecked
+            {
+                int hash = 17;
+
+                AttributedScopeStack current = this;
+                while (current != null)
+                {
+                    hash = (hash * 31) + current.TokenAttributes;
+
+                    int scopeHashCode = current.ScopePath?.GetHashCode() ?? 0;
+                    hash = (hash * 31) + scopeHashCode;
+
+                    current = current.Parent;
+                }
+
+                return hash;
+            }
+#endif
+        }
 
         static bool MatchesScope(string scope, string selector, string selectorWithDot)
         {
@@ -176,6 +214,8 @@ namespace TextMateSharp.Internal.Grammars
             {
                 return this;
             }
+            if (grammar == null) throw new ArgumentNullException(nameof(grammar));
+
             if (scopePath.IndexOf(' ') >= 0)
             {
                 // there are multiple scopes to push
