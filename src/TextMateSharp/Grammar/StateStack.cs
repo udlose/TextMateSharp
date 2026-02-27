@@ -1,6 +1,5 @@
 using System;
-using System.Collections.Generic;
-
+using System.Text;
 using TextMateSharp.Internal.Grammars;
 using TextMateSharp.Internal.Rules;
 
@@ -81,18 +80,21 @@ namespace TextMateSharp.Grammars
             {
                 return false;
             }
-            if (!(other is StateStack)) {
-                return false;
+
+            if (other is StateStack stackElement)
+            {
+                return StructuralEquals(this, stackElement) &&
+                       this.ContentNameScopesList.Equals(stackElement.ContentNameScopesList);
             }
-            StateStack stackElement = (StateStack)other;
-            return StructuralEquals(this, stackElement) && this.ContentNameScopesList.Equals(stackElement.ContentNameScopesList);
+
+            return false;
         }
 
         public override int GetHashCode()
         {
-            return Depth.GetHashCode() + 
+            return Depth.GetHashCode() +
                 RuleId.GetHashCode() +
-                EndRule.GetHashCode() + 
+                EndRule.GetHashCode() +
                 Parent.GetHashCode() +
                 ContentNameScopesList.GetHashCode();
         }
@@ -157,21 +159,36 @@ namespace TextMateSharp.Grammars
             return grammar.GetRule(this.RuleId);
         }
 
-        private void AppendString(List<string> res)
-        {
-            if (this.Parent != null)
-            {
-                this.Parent.AppendString(res);
-            }
-
-            res.Add('(' + this.RuleId.ToString() + ')'); //, TODO-${this.nameScopesList}, TODO-${this.contentNameScopesList})`;
-        }
-
         public override string ToString()
         {
-            List<string> r = new List<string>();
-            this.AppendString(r);
-            return '[' + string.Join(", ", r) + ']';
+            int depth = this.Depth;
+            RuleId[] ruleIds = new RuleId[depth];
+            StateStack current = this;
+
+            for (int i = depth - 1; i >= 0; i--)
+            {
+                ruleIds[i] = current.RuleId;
+                current = current.Parent;
+            }
+
+            const int estimatedCharsPerRuleId = 8;
+            StringBuilder builder = new StringBuilder(16 + (depth * estimatedCharsPerRuleId));
+            builder.Append('[');
+
+            for (int i = 0; i < depth; i++)
+            {
+                if (i > 0)
+                {
+                    builder.Append(", ");
+                }
+
+                builder.Append('(');
+                builder.Append(ruleIds[i].ToString()); //, TODO-${this.nameScopesList}, TODO-${this.contentNameScopesList})`;
+                builder.Append(')');
+            }
+
+            builder.Append(']');
+            return builder.ToString();
         }
 
         public StateStack WithContentNameScopesList(AttributedScopeStack contentNameScopesList)
