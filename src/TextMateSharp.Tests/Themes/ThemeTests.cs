@@ -17,6 +17,8 @@ namespace TextMateSharp.Tests.Themes
         private const int SingleScopeMatchCount = 1;
         private const int DuplicateScopeMatchCount = 2;
 
+        #region GetColorId tests
+
         [Test]
         public void GetColorId_NullColor_ReturnsZero()
         {
@@ -198,6 +200,151 @@ namespace TextMateSharp.Tests.Themes
         }
 
         [Test]
+        public void GetColorId_NullAfterValidColor_ReturnsZero()
+        {
+            // Arrange
+            IRegistryOptions registryOptions = CreateMockRegistryOptions(CreateDefaultRawTheme(), null);
+            Theme theme = Theme.CreateFromRawTheme(
+                registryOptions.GetDefaultTheme(),
+                registryOptions);
+
+            theme.GetColorId("#FF0000"); // Add a color first
+
+            // Act
+            int result = theme.GetColorId(null);
+
+            // Assert
+            Assert.AreEqual(NullColorId, result,
+                "Null should always return 0 regardless of other colors added");
+        }
+
+        [Test]
+        public void GetColorId_ManyUniqueColors_AllReceiveUniqueIds()
+        {
+            // Arrange
+            IRegistryOptions registryOptions = CreateMockRegistryOptions(CreateDefaultRawTheme(), null);
+            Theme theme = Theme.CreateFromRawTheme(
+                registryOptions.GetDefaultTheme(),
+                registryOptions);
+
+            const int colorCount = 1_000;
+            HashSet<int> uniqueIds = new HashSet<int>();
+
+            // Act
+            for (int i = 0; i < colorCount; i++)
+            {
+                string color = $"#{i:X6}";
+                int id = theme.GetColorId(color);
+                uniqueIds.Add(id);
+            }
+
+            // Assert
+            Assert.AreEqual(colorCount, uniqueIds.Count,
+                "Each unique color should receive a unique ID");
+        }
+
+        [Test]
+        public void GetColorId_HexColorFormat_ReturnsUniqueId()
+        {
+            // Arrange
+            IRegistryOptions registryOptions = CreateMockRegistryOptions(CreateDefaultRawTheme(), null);
+            Theme theme = Theme.CreateFromRawTheme(
+                registryOptions.GetDefaultTheme(),
+                registryOptions);
+            const string hexColor = "#FF5733";
+
+            // Act
+            int id = theme.GetColorId(hexColor);
+            string storedColor = theme.GetColor(id);
+
+            // Assert
+            Assert.AreEqual(FirstCustomColorId, id);
+            Assert.AreEqual(hexColor, storedColor);
+        }
+
+        [Test]
+        public void GetColorId_RgbColorFormat_StoresAsUniqueColor()
+        {
+            // Arrange
+            IRegistryOptions registryOptions = CreateMockRegistryOptions(CreateDefaultRawTheme(), null);
+            Theme theme = Theme.CreateFromRawTheme(
+                registryOptions.GetDefaultTheme(),
+                registryOptions);
+            const string rgbColor = "rgb(255, 87, 51)";
+
+            // Act
+            int id = theme.GetColorId(rgbColor);
+            string storedColor = theme.GetColor(id);
+
+            // Assert
+            Assert.AreEqual(FirstCustomColorId, id);
+            Assert.AreEqual(rgbColor.ToUpper(), storedColor,
+                "RGB format is stored as-is in uppercase without normalization");
+        }
+
+        [Test]
+        public void GetColorId_DifferentFormatsForSameVisualColor_ReturnsDifferentIds()
+        {
+            // Arrange
+            IRegistryOptions registryOptions = CreateMockRegistryOptions(CreateDefaultRawTheme(), null);
+            Theme theme = Theme.CreateFromRawTheme(
+                registryOptions.GetDefaultTheme(),
+                registryOptions);
+            const string hexColor = "#FF5733";
+            const string rgbColor = "rgb(255, 87, 51)";
+
+            // Act
+            int hexId = theme.GetColorId(hexColor);
+            int rgbId = theme.GetColorId(rgbColor);
+
+            // Assert
+            Assert.AreNotEqual(hexId, rgbId,
+                "Different color format strings are treated as different colors without normalization");
+        }
+
+        [Test]
+        public void GetColorId_RgbaColorFormat_StoresAsUniqueColor()
+        {
+            // Arrange
+            IRegistryOptions registryOptions = CreateMockRegistryOptions(CreateDefaultRawTheme(), null);
+            Theme theme = Theme.CreateFromRawTheme(
+                registryOptions.GetDefaultTheme(),
+                registryOptions);
+            const string rgbaColor = "rgba(255, 87, 51, 1)";
+
+            // Act
+            int id = theme.GetColorId(rgbaColor);
+            string storedColor = theme.GetColor(id);
+
+            // Assert
+            Assert.AreEqual(FirstCustomColorId, id);
+            Assert.AreEqual(rgbaColor.ToUpper(), storedColor);
+        }
+
+        [Test]
+        public void GetColorId_HslColorFormat_StoresAsUniqueColor()
+        {
+            // Arrange
+            IRegistryOptions registryOptions = CreateMockRegistryOptions(CreateDefaultRawTheme(), null);
+            Theme theme = Theme.CreateFromRawTheme(
+                registryOptions.GetDefaultTheme(),
+                registryOptions);
+            const string hslColor = "hsl(14, 100%, 60%)";
+
+            // Act
+            int id = theme.GetColorId(hslColor);
+            string storedColor = theme.GetColor(id);
+
+            // Assert
+            Assert.AreEqual(FirstCustomColorId, id);
+            Assert.AreEqual(hslColor.ToUpper(), storedColor);
+        }
+
+        #endregion GetColorId tests
+
+        #region GetGuiColorDictionary tests
+
+        [Test]
         public void GetGuiColorDictionary_WithEmptyGuiColors_ReturnsEmptyReadOnlyDictionary()
         {
             // Arrange
@@ -363,6 +510,10 @@ namespace TextMateSharp.Tests.Themes
             Assert.AreSame(result1, result2);
         }
 
+        #endregion GetGuiColorDictionary tests
+
+        #region GetColorMap tests
+
         [Test]
         public void GetColorMap_DefaultColorsPresent_ReturnsMapContainingDefaults()
         {
@@ -399,6 +550,10 @@ namespace TextMateSharp.Tests.Themes
             CollectionAssert.Contains(colorMap, color);
         }
 
+        #endregion GetColorMap tests
+
+        #region GetColor tests
+
         [Test]
         public void GetColor_RoundTrip_ReturnsOriginalColor()
         {
@@ -416,6 +571,10 @@ namespace TextMateSharp.Tests.Themes
             // Assert
             Assert.AreEqual(color, resolved);
         }
+
+        #endregion GetColor tests
+
+        #region Match tests
 
         [Test]
         public void Match_EmptyScopeList_ReturnsEmptyList()
@@ -495,6 +654,10 @@ namespace TextMateSharp.Tests.Themes
             }
         }
 
+        #endregion Match tests
+
+        #region ThemeTrieElementRule tests
+
         [Test]
         public void ThemeTrieElementRule_AcceptOverwrite_ExtremeScopeDepths_HandlesCorrectly()
         {
@@ -545,146 +708,292 @@ namespace TextMateSharp.Tests.Themes
                 "Scope depth should not decrease when overwriting with lower depth");
         }
 
-        [Test]
-        public void GetColorId_NullAfterValidColor_ReturnsZero()
-        {
-            // Arrange
-            IRegistryOptions registryOptions = CreateMockRegistryOptions(CreateDefaultRawTheme(), null);
-            Theme theme = Theme.CreateFromRawTheme(
-                registryOptions.GetDefaultTheme(),
-                registryOptions);
+        #endregion ThemeTrieElementRule tests
 
-            theme.GetColorId("#FF0000"); // Add a color first
-
-            // Act
-            int result = theme.GetColorId(null);
-
-            // Assert
-            Assert.AreEqual(NullColorId, result,
-                "Null should always return 0 regardless of other colors added");
-        }
+        #region Default rule processing tests (Add to existing ThemeTests.cs)
 
         [Test]
-        public void GetColorId_ManyUniqueColors_AllReceiveUniqueIds()
+        public void CreateFromRawTheme_WithEmptyScopeRule_SetsDefaultFontStyle()
         {
             // Arrange
-            IRegistryOptions registryOptions = CreateMockRegistryOptions(CreateDefaultRawTheme(), null);
-            Theme theme = Theme.CreateFromRawTheme(
-                registryOptions.GetDefaultTheme(),
-                registryOptions);
+            const string foregroundColor = "#FFFFFF";
+            const string backgroundColor = "#000000";
 
-            const int colorCount = 1_000;
-            HashSet<int> uniqueIds = new HashSet<int>();
-
-            // Act
-            for (int i = 0; i < colorCount; i++)
+            ThemeRaw rawTheme = new ThemeRaw
             {
-                string color = $"#{i:X6}";
-                int id = theme.GetColorId(color);
-                uniqueIds.Add(id);
-            }
+                ["tokenColors"] = new List<IRawThemeSetting>
+                {
+                    new ThemeRaw
+                    {
+                        // A default empty scope is already added
+                        ["settings"] = new ThemeRaw
+                        {
+                            ["fontStyle"] = "bold",
+                            ["foreground"] = foregroundColor,
+                            ["background"] = backgroundColor
+                        }
+                    },
+                    new ThemeRaw
+                    {
+                        ["scope"] = "source.test",
+                        ["settings"] = new ThemeRaw { ["foreground"] = "#FF0000" }
+                    }
+                }
+            };
 
-            // Assert
-            Assert.AreEqual(colorCount, uniqueIds.Count,
-                "Each unique color should receive a unique ID");
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            mockRegistryOptions.Setup(r => r.GetInjections(It.IsAny<string>())).Returns((List<string>)null);
+
+            // Act
+            Theme theme = Theme.CreateFromRawTheme(rawTheme, mockRegistryOptions.Object);
+
+            // Assert - Verify defaults were set by checking color IDs match expected defaults
+            int foregroundId = theme.GetColorId(foregroundColor);
+            int backgroundId = theme.GetColorId(backgroundColor);
+
+            Assert.Greater(foregroundId, NullColorId, "Default foreground should be registered");
+            Assert.Greater(backgroundId, NullColorId, "Default background should be registered");
         }
 
         [Test]
-        public void GetColorId_HexColorFormat_ReturnsUniqueId()
+        public void CreateFromRawTheme_WithMultipleEmptyScopeRules_LastRuleWinsForEachProperty()
         {
             // Arrange
-            IRegistryOptions registryOptions = CreateMockRegistryOptions(CreateDefaultRawTheme(), null);
-            Theme theme = Theme.CreateFromRawTheme(
-                registryOptions.GetDefaultTheme(),
-                registryOptions);
-            const string hexColor = "#FF5733";
+            const string firstForeground = "#111111";
+            const string secondForeground = "#222222";
+            const string finalForeground = "#333333";
+            const string finalBackground = "#444444";
+
+            ThemeRaw rawTheme = new ThemeRaw
+            {
+                ["tokenColors"] = new List<IRawThemeSetting>
+                {
+                    new ThemeRaw
+                    {
+                        // A default empty scope is already added
+                        ["settings"] = new ThemeRaw
+                        {
+                            ["fontStyle"] = "italic",
+                            ["foreground"] = firstForeground
+                        }
+                    },
+                    new ThemeRaw
+                    {
+                        ["scope"] = "",
+                        ["settings"] = new ThemeRaw
+                        {
+                            ["fontStyle"] = "underline",
+                            ["foreground"] = secondForeground
+                        }
+                    },
+                    new ThemeRaw
+                    {
+                        ["scope"] = "",
+                        ["settings"] = new ThemeRaw
+                        {
+                            ["fontStyle"] = "bold",
+                            ["foreground"] = finalForeground,
+                            ["background"] = finalBackground
+                        }
+                    },
+                    new ThemeRaw
+                    {
+                        ["scope"] = "test",
+                        ["settings"] = new ThemeRaw { ["foreground"] = "#FF0000" }
+                    }
+                }
+            };
+
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            mockRegistryOptions.Setup(r => r.GetInjections(It.IsAny<string>())).Returns((List<string>)null);
 
             // Act
-            int id = theme.GetColorId(hexColor);
-            string storedColor = theme.GetColor(id);
+            Theme theme = Theme.CreateFromRawTheme(rawTheme, mockRegistryOptions.Object);
 
-            // Assert
-            Assert.AreEqual(FirstCustomColorId, id);
-            Assert.AreEqual(hexColor, storedColor);
+            // Assert - Last rule's colors should be registered
+            int finalForegroundId = theme.GetColorId(finalForeground);
+            int finalBackgroundId = theme.GetColorId(finalBackground);
+
+            Assert.Greater(finalForegroundId, NullColorId, "Final foreground should override previous defaults");
+            Assert.Greater(finalBackgroundId, NullColorId, "Final background should override previous defaults");
+
+            // Verify earlier colors are also in the map (they were processed but overridden)
+            ICollection<string> colorMap = theme.GetColorMap();
+            CollectionAssert.Contains(colorMap, finalForeground);
+            CollectionAssert.Contains(colorMap, finalBackground);
         }
 
         [Test]
-        public void GetColorId_RgbColorFormat_StoresAsUniqueColor()
+        public void CreateFromRawTheme_EmptyScopeWithNotSetFontStyle_KeepsDefaultFontStyle()
         {
-            // Arrange
-            IRegistryOptions registryOptions = CreateMockRegistryOptions(CreateDefaultRawTheme(), null);
-            Theme theme = Theme.CreateFromRawTheme(
-                registryOptions.GetDefaultTheme(),
-                registryOptions);
-            const string rgbColor = "rgb(255, 87, 51)";
+            // Arrange - FontStyle omitted means NotSet, should not override default
+            ThemeRaw rawTheme = new ThemeRaw
+            {
+                ["tokenColors"] = new List<IRawThemeSetting>
+                {
+                    new ThemeRaw
+                    {
+                        // A default empty scope is already added
+                        ["settings"] = new ThemeRaw
+                        {
+                            ["foreground"] = "#FFFFFF"
+                            // No fontStyle property
+                        }
+                    }
+                }
+            };
+
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            mockRegistryOptions.Setup(r => r.GetInjections(It.IsAny<string>())).Returns((List<string>)null);
 
             // Act
-            int id = theme.GetColorId(rgbColor);
-            string storedColor = theme.GetColor(id);
+            Theme theme = Theme.CreateFromRawTheme(rawTheme, mockRegistryOptions.Object);
 
-            // Assert
-            Assert.AreEqual(FirstCustomColorId, id);
-            Assert.AreEqual(rgbColor.ToUpper(), storedColor,
-                "RGB format is stored as-is in uppercase without normalization");
+            // Assert - Should use hardcoded defaults (#000000, #FFFFFF)
+            ICollection<string> colorMap = theme.GetColorMap();
+            CollectionAssert.Contains(colorMap, "#000000", "Default foreground #000000 should be in map");
+            CollectionAssert.Contains(colorMap, "#FFFFFF", "Default background #FFFFFF should be in map");
         }
 
         [Test]
-        public void GetColorId_DifferentFormatsForSameVisualColor_ReturnsDifferentIds()
+        public void CreateFromRawTheme_EmptyScopeWithNullColors_KeepsDefaultColors()
         {
             // Arrange
-            IRegistryOptions registryOptions = CreateMockRegistryOptions(CreateDefaultRawTheme(), null);
-            Theme theme = Theme.CreateFromRawTheme(
-                registryOptions.GetDefaultTheme(),
-                registryOptions);
-            const string hexColor = "#FF5733";
-            const string rgbColor = "rgb(255, 87, 51)";
+            ThemeRaw rawTheme = new ThemeRaw
+            {
+                ["tokenColors"] = new List<IRawThemeSetting>
+                {
+                    new ThemeRaw
+                    {
+                        // A default empty scope is already added
+                        ["settings"] = new ThemeRaw
+                        {
+                            ["fontStyle"] = "bold"
+                            // No foreground or background
+                        }
+                    }
+                }
+            };
+
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            mockRegistryOptions.Setup(r => r.GetInjections(It.IsAny<string>())).Returns((List<string>)null);
 
             // Act
-            int hexId = theme.GetColorId(hexColor);
-            int rgbId = theme.GetColorId(rgbColor);
+            Theme theme = Theme.CreateFromRawTheme(rawTheme, mockRegistryOptions.Object);
 
-            // Assert
-            Assert.AreNotEqual(hexId, rgbId,
-                "Different color format strings are treated as different colors without normalization");
+            // Assert - Should use hardcoded default colors
+            const string defaultForeground = "#000000";
+            const string defaultBackground = "#FFFFFF";
+
+            int foregroundId = theme.GetColorId(defaultForeground);
+            int backgroundId = theme.GetColorId(defaultBackground);
+
+            Assert.AreEqual(defaultForeground, theme.GetColor(foregroundId));
+            Assert.AreEqual(defaultBackground, theme.GetColor(backgroundId));
         }
 
         [Test]
-        public void GetColorId_RgbaColorFormat_StoresAsUniqueColor()
+        public void CreateFromRawTheme_EmptyScopeWithOnlyForeground_OverridesForegroundOnly()
         {
             // Arrange
-            IRegistryOptions registryOptions = CreateMockRegistryOptions(CreateDefaultRawTheme(), null);
-            Theme theme = Theme.CreateFromRawTheme(
-                registryOptions.GetDefaultTheme(),
-                registryOptions);
-            const string rgbaColor = "rgba(255, 87, 51, 1)";
+            const string customForeground = "#ABCDEF";
+
+            ThemeRaw rawTheme = new ThemeRaw
+            {
+                ["tokenColors"] = new List<IRawThemeSetting>
+                {
+                    new ThemeRaw
+                    {
+                        // A default empty scope is already added
+                        ["settings"] = new ThemeRaw
+                        {
+                            ["foreground"] = customForeground
+                            // No background
+                        }
+                    }
+                }
+            };
+
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            mockRegistryOptions.Setup(r => r.GetInjections(It.IsAny<string>())).Returns((List<string>)null);
 
             // Act
-            int id = theme.GetColorId(rgbaColor);
-            string storedColor = theme.GetColor(id);
+            Theme theme = Theme.CreateFromRawTheme(rawTheme, mockRegistryOptions.Object);
 
             // Assert
-            Assert.AreEqual(FirstCustomColorId, id);
-            Assert.AreEqual(rgbaColor.ToUpper(), storedColor);
+            ICollection<string> colorMap = theme.GetColorMap();
+            CollectionAssert.Contains(colorMap, customForeground, "Custom foreground should be in color map");
+            CollectionAssert.Contains(colorMap, "#FFFFFF", "Default background #FFFFFF should still be in map");
         }
 
         [Test]
-        public void GetColorId_HslColorFormat_StoresAsUniqueColor()
+        public void CreateFromRawTheme_EmptyScopeWithOnlyBackground_OverridesBackgroundOnly()
         {
             // Arrange
-            IRegistryOptions registryOptions = CreateMockRegistryOptions(CreateDefaultRawTheme(), null);
-            Theme theme = Theme.CreateFromRawTheme(
-                registryOptions.GetDefaultTheme(),
-                registryOptions);
-            const string hslColor = "hsl(14, 100%, 60%)";
+            const string customBackground = "#123456";
+
+            ThemeRaw rawTheme = new ThemeRaw
+            {
+                ["tokenColors"] = new List<IRawThemeSetting>
+                {
+                    new ThemeRaw
+                    {
+                        // A default empty scope is already added
+                        ["settings"] = new ThemeRaw
+                        {
+                            ["background"] = customBackground
+                            // No foreground
+                        }
+                    }
+                }
+            };
+
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            mockRegistryOptions.Setup(r => r.GetInjections(It.IsAny<string>())).Returns((List<string>)null);
 
             // Act
-            int id = theme.GetColorId(hslColor);
-            string storedColor = theme.GetColor(id);
+            Theme theme = Theme.CreateFromRawTheme(rawTheme, mockRegistryOptions.Object);
 
             // Assert
-            Assert.AreEqual(FirstCustomColorId, id);
-            Assert.AreEqual(hslColor.ToUpper(), storedColor);
+            ICollection<string> colorMap = theme.GetColorMap();
+            CollectionAssert.Contains(colorMap, "#000000", "Default foreground #000000 should still be in map");
+            CollectionAssert.Contains(colorMap, customBackground, "Custom background should be in color map");
         }
+
+        [Test]
+        public void CreateFromRawTheme_NoEmptyScopeRules_UsesHardcodedDefaults()
+        {
+            // Arrange - No rules with empty scope
+            ThemeRaw rawTheme = new ThemeRaw
+            {
+                ["tokenColors"] = new List<IRawThemeSetting>
+                {
+                    new ThemeRaw
+                    {
+                        ["scope"] = "source.test",
+                        ["settings"] = new ThemeRaw
+                        {
+                            ["fontStyle"] = "bold",
+                            ["foreground"] = "#FF0000",
+                            ["background"] = "#00FF00"
+                        }
+                    }
+                }
+            };
+
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            mockRegistryOptions.Setup(r => r.GetInjections(It.IsAny<string>())).Returns((List<string>)null);
+
+            // Act
+            Theme theme = Theme.CreateFromRawTheme(rawTheme, mockRegistryOptions.Object);
+
+            // Assert - Should use hardcoded defaults (#000000, #FFFFFF)
+            ICollection<string> colorMap = theme.GetColorMap();
+            CollectionAssert.Contains(colorMap, "#000000", "Hardcoded default foreground should be present");
+            CollectionAssert.Contains(colorMap, "#FFFFFF", "Hardcoded default background should be present");
+        }
+
+        #endregion Default rule processing tests
 
         #region helpers
 
