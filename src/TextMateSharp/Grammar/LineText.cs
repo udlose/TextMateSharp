@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.InteropServices;
 
 namespace TextMateSharp.Grammars
 {
@@ -38,18 +37,6 @@ namespace TextMateSharp.Grammars
             // Empty memories are equal
             if (_memory.Length == 0)
                 return true;
-
-            // Try to check if they reference the same memory region
-            if (MemoryMarshal.TryGetArray(_memory, out ArraySegment<char> thisSegment) &&
-                MemoryMarshal.TryGetArray(other._memory, out ArraySegment<char> otherSegment))
-            {
-                // If same array and same offset, they're definitely equal (length already checked)
-                if (ReferenceEquals(thisSegment.Array, otherSegment.Array) &&
-                    thisSegment.Offset == otherSegment.Offset)
-                {
-                    return true;
-                }
-            }
 
             // Fall back to content comparison
             return _memory.Span.SequenceEqual(other._memory.Span);
