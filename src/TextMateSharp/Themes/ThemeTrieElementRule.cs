@@ -85,16 +85,17 @@ namespace TextMateSharp.Themes
             // Cannot cache: fields are mutable via AcceptOverwrite
             unchecked
             {
+                const int primeFactor = 31; // Common prime factor for multiply-accumulate hash code
                 int hash = 17;
-                hash = (hash * 31) + (name == null ? 0 : StringComparer.Ordinal.GetHashCode(name));
-                hash = (hash * 31) + scopeDepth;
-                hash = (hash * 31) + (int)fontStyle;
-                hash = (hash * 31) + foreground;
-                hash = (hash * 31) + background;
+                hash = (hash * primeFactor) + (name == null ? 0 : StringComparer.Ordinal.GetHashCode(name));
+                hash = (hash * primeFactor) + scopeDepth;
+                hash = (hash * primeFactor) + (int)fontStyle;
+                hash = (hash * primeFactor) + foreground;
+                hash = (hash * primeFactor) + background;
                 // Deep hash of parentScopes list contents instead of identity hash.
                 // The original code called parentScopes.GetHashCode() which returns
                 // the object identity hash - useless for value-based equality.
-                hash = (hash * 31) + ParentScopesGetHashCode(parentScopes);
+                hash = (hash * primeFactor) + ParentScopesGetHashCode(parentScopes);
                 return hash;
             }
         }
@@ -113,11 +114,12 @@ namespace TextMateSharp.Themes
 
             unchecked
             {
+                const int primeFactor = 31; // Common prime factor for multiply-accumulate hash code
                 int hash = 17;
                 for (int i = 0, count = scopes.Count; i < count; i++)
                 {
                     string s = scopes[i];
-                    hash = (hash * 31) + (s?.GetHashCode() ?? 0);
+                    hash = (hash * primeFactor) + (s == null ? 0 : StringComparer.Ordinal.GetHashCode(s));
                 }
                 return hash;
             }

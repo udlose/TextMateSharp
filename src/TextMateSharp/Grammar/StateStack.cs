@@ -219,7 +219,7 @@ namespace TextMateSharp.Grammars
             {
                 int hash = parent?._hashCode ?? 0;
                 hash = (hash * primeFactor) + (contentNameScopesList?.GetHashCode() ?? 0);
-                hash = (hash * primeFactor) + (endRule?.GetHashCode() ?? 0);
+                hash = (hash * primeFactor) + (endRule == null ? 0 : StringComparer.Ordinal.GetHashCode(endRule));
                 hash = (hash * primeFactor) + (ruleId?.GetHashCode() ?? 0);
                 return (hash * primeFactor) + depth;
             }

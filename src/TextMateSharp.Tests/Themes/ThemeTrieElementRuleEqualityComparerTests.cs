@@ -1,8 +1,5 @@
-﻿using System;
+﻿using NUnit.Framework;
 using System.Collections.Generic;
-
-using NUnit.Framework;
-
 using TextMateSharp.Themes;
 
 namespace TextMateSharp.Tests.Themes
@@ -46,7 +43,7 @@ namespace TextMateSharp.Tests.Themes
 
         #endregion Default instance tests
 
-        #region Equals tests — reference and null
+        #region Equals tests - reference and null
 
         [Test]
         public void Equals_BothNull_ReturnsTrue()
@@ -91,9 +88,9 @@ namespace TextMateSharp.Tests.Themes
             Assert.IsTrue(_comparer.Equals(rule, rule));
         }
 
-        #endregion Equals tests — reference and null
+        #endregion Equals tests - reference and null
 
-        #region Equals tests — field-by-field comparison
+        #region Equals tests - field-by-field comparison
 
         [Test]
         public void Equals_AllFieldsMatch_ReturnsTrue()
@@ -155,7 +152,7 @@ namespace TextMateSharp.Tests.Themes
         [Test]
         public void Equals_Different_Names_ReturnsFalse()
         {
-            // Arrange — name differs but all equality-relevant fields match
+            // Arrange - name differs but all equality-relevant fields match
             ThemeTrieElementRule left = new ThemeTrieElementRule("rule.one", DefaultScopeDepth, null, DefaultFontStyle, DefaultForeground, DefaultBackground);
             ThemeTrieElementRule right = new ThemeTrieElementRule("rule.two", DefaultScopeDepth, null, DefaultFontStyle, DefaultForeground, DefaultBackground);
 
@@ -163,9 +160,9 @@ namespace TextMateSharp.Tests.Themes
             Assert.IsFalse(_comparer.Equals(left, right));
         }
 
-        #endregion Equals tests — field-by-field comparison
+        #endregion Equals tests - field-by-field comparison
 
-        #region Equals tests — parentScopes deep comparison
+        #region Equals tests - parentScopes deep comparison
 
         [Test]
         public void Equals_BothNullParentScopes_ReturnsTrue()
@@ -214,7 +211,7 @@ namespace TextMateSharp.Tests.Themes
         [Test]
         public void Equals_SameParentScopesReference_ReturnsTrue()
         {
-            // Arrange — shared list instance (common in Clone scenarios)
+            // Arrange - shared list instance (common in Clone scenarios)
             List<string> shared = new List<string> { "source.cs", "meta.class" };
             ThemeTrieElementRule left = new ThemeTrieElementRule(DefaultName, DefaultScopeDepth, shared, DefaultFontStyle, DefaultForeground, DefaultBackground);
             ThemeTrieElementRule right = new ThemeTrieElementRule(DefaultName, DefaultScopeDepth, shared, DefaultFontStyle, DefaultForeground, DefaultBackground);
@@ -234,9 +231,9 @@ namespace TextMateSharp.Tests.Themes
             Assert.IsFalse(_comparer.Equals(left, right));
         }
 
-        #endregion Equals tests — parentScopes deep comparison
+        #endregion Equals tests - parentScopes deep comparison
 
-        #region Equals tests — symmetry and transitivity
+        #region Equals tests - symmetry and transitivity
 
         [Test]
         public void Equals_IsSymmetric()
@@ -264,7 +261,7 @@ namespace TextMateSharp.Tests.Themes
             Assert.IsTrue(_comparer.Equals(a, c));
         }
 
-        #endregion Equals tests — symmetry and transitivity
+        #endregion Equals tests - symmetry and transitivity
 
         #region GetHashCode tests
 
@@ -289,7 +286,7 @@ namespace TextMateSharp.Tests.Themes
         [Test]
         public void GetHashCode_ConsistentWithEquals()
         {
-            // Arrange — if Equals returns true, hashes must match
+            // Arrange - if Equals returns true, hashes must match
             ThemeTrieElementRule left = new ThemeTrieElementRule(DefaultName, DefaultScopeDepth, new List<string> { "source", "meta" }, DefaultFontStyle, DefaultForeground, DefaultBackground);
             ThemeTrieElementRule right = new ThemeTrieElementRule(DefaultName, DefaultScopeDepth, new List<string> { "source", "meta" }, DefaultFontStyle, DefaultForeground, DefaultBackground);
 
@@ -301,7 +298,7 @@ namespace TextMateSharp.Tests.Themes
         [Test]
         public void GetHashCode_ConsistentWithObjectGetHashCode()
         {
-            // Arrange — comparer delegates to obj.GetHashCode(), so both should agree
+            // Arrange - comparer delegates to obj.GetHashCode(), so both should agree
             ThemeTrieElementRule rule = CreateDefaultRule();
 
             // Act & Assert
@@ -326,7 +323,7 @@ namespace TextMateSharp.Tests.Themes
         [Test]
         public void Comparer_WorksAsDictionaryKeyComparer()
         {
-            // Arrange — verifies the comparer works with Dictionary<TKey, TValue>
+            // Arrange - verifies the comparer works with Dictionary<TKey, TValue>
             Dictionary<ThemeTrieElementRule, string> dict =
                 new Dictionary<ThemeTrieElementRule, string>(_comparer);
 
@@ -338,7 +335,7 @@ namespace TextMateSharp.Tests.Themes
             // Act
             dict[key1] = "value1";
 
-            // Assert — key2 is a different instance but structurally equal, so lookup succeeds
+            // Assert - key2 is a different instance but structurally equal, so lookup succeeds
             Assert.IsTrue(dict.ContainsKey(key2));
             Assert.AreEqual("value1", dict[key2]);
         }
@@ -346,7 +343,7 @@ namespace TextMateSharp.Tests.Themes
         [Test]
         public void Comparer_WorksAsHashSetComparer()
         {
-            // Arrange — verifies the comparer works with HashSet<T>
+            // Arrange - verifies the comparer works with HashSet<T>
             HashSet<ThemeTrieElementRule> set =
                 new HashSet<ThemeTrieElementRule>(_comparer);
 
@@ -358,7 +355,7 @@ namespace TextMateSharp.Tests.Themes
             // Act
             set.Add(rule1);
 
-            // Assert — rule2 is structurally equal, so Add returns false and count stays 1
+            // Assert - rule2 is structurally equal, so Add returns false and count stays 1
             Assert.IsFalse(set.Add(rule2));
             Assert.AreEqual(1, set.Count);
         }
