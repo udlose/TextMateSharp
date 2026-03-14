@@ -933,7 +933,7 @@ namespace TextMateSharp.Tests.Grammar
         [Test]
         public void Equals_NullContentNameScopesListOnBothSides_ReturnsTrue()
         {
-            // Arrange - previously would throw NullReferenceException
+            // Arrange
             StateStack left = new StateStack(
                 null,
                 RuleId.Of(RuleIdSingleDepth),
@@ -1785,7 +1785,7 @@ namespace TextMateSharp.Tests.Grammar
         [Test]
         public void WithContentNameScopesList_NullOnBothSides_ReturnsSameInstance()
         {
-            // Arrange - previously would throw NullReferenceException
+            // Arrange
             StateStack stack = new StateStack(
                 StateStack.NULL,
                 RuleId.Of(RuleIdSingleDepth),

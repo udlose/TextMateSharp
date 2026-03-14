@@ -10,6 +10,17 @@ namespace TextMateSharp.Themes
 
         // _themeTrieElementBrand: void;
 
+
+        /// <summary>
+        /// Readonly references to mutable state used by this trie element.
+        /// <para>
+        /// Note: <see cref="mainRule"/>, <see cref="rulesWithParentScopes"/> and <see cref="children"/>
+        /// are not deeply immutable. The fields themselves are readonly (they cannot be
+        /// reassigned), but the referenced <see cref="ThemeTrieElementRule"/> instances and
+        /// the contents of the collections are mutated by methods such as Insert and DoInsertHere
+        /// (for example via <c>AcceptOverwrite</c> on <see cref="ThemeTrieElementRule"/>).
+        /// </para>
+        /// </summary>
         private readonly ThemeTrieElementRule mainRule;
         private readonly List<ThemeTrieElementRule> rulesWithParentScopes;
         private readonly Dictionary<string /* segment */, ThemeTrieElement> children;
@@ -194,6 +205,14 @@ namespace TextMateSharp.Themes
                 new ThemeTrieElementRule(name, scopeDepth, parentScopes, fontStyle, foreground, background));
         }
 
+        /// <summary>
+        /// Calculates a hash code for the current instance, suitable for use in hash-based collections.
+        /// </summary>
+        /// <remarks>The hash code is computed based on the main rule, the list of rules with parent
+        /// scopes, and the children dictionary. Because these collections may be mutated after construction, the hash
+        /// code is not cached and may change if the instance is modified. Use caution when relying on hash codes for
+        /// mutable objects.</remarks>
+        /// <returns>A 32-bit signed integer that represents the hash code for the current instance.</returns>
         public override int GetHashCode()
         {
             // Prime-factor mixing for better hash distribution.
@@ -204,7 +223,7 @@ namespace TextMateSharp.Themes
             {
                 int hash = 17;
                 // Deep hash of mainRule using its IEquatable-based GetHashCode
-                hash = (hash * 31) + ((mainRule?.GetHashCode()) ?? 0);
+                hash = (hash * 31) + (mainRule?.GetHashCode() ?? 0);
                 // Deep hash of rulesWithParentScopes list contents
                 hash = (hash * 31) + RuleListGetHashCode(rulesWithParentScopes);
                 // Deep hash of children dictionary contents
@@ -214,10 +233,13 @@ namespace TextMateSharp.Themes
         }
 
         /// <summary>
-        /// Computes a value-based hash code for a list of <see cref="ThemeTrieElementRule"/>
-        /// by iterating each element. The original code called List.GetHashCode() which
-        /// returns the object identity hash - useless for value-based equality.
+        /// Calculates a hash code for the specified list of theme rules.
         /// </summary>
+        /// <remarks>The hash code is computed by combining the hash codes of individual rules using
+        /// unchecked arithmetic. This approach prevents overflow exceptions and ensures efficient hash code generation
+        /// for use in hash-based collections.</remarks>
+        /// <param name="rules">The list of theme rules for which to compute the hash code. If null, a hash code of 0 is returned.</param>
+        /// <returns>An integer representing the combined hash code of the provided theme rules.</returns>
         private static int RuleListGetHashCode(List<ThemeTrieElementRule> rules)
         {
             if (rules == null)
@@ -237,9 +259,11 @@ namespace TextMateSharp.Themes
 
         /// <summary>
         /// Computes a value-based hash code for the children dictionary by combining
-        /// hash codes of all key-value pairs. Uses XOR for pair combination so that
+        /// hash codes of all key-value pairs. Uses additive accumulation for pair combination so that
         /// hash is order-independent (dictionary enumeration order is not guaranteed).
         /// </summary>
+        /// <param name="dict">The dictionary of children for which to compute the hash code. If null, a hash code of 0 is returned.</param>
+        /// <returns>An integer representing the combined hash code of the provided dictionary.</returns>
         private static int ChildrenGetHashCode(Dictionary<string, ThemeTrieElement> dict)
         {
             if (dict == null)
@@ -247,13 +271,16 @@ namespace TextMateSharp.Themes
 
             unchecked
             {
-                // XOR is commutative - order-independent accumulation for dictionaries
+                // addition is commutative - order-independent accumulation for dictionaries
                 int hash = 0;
                 foreach (KeyValuePair<string, ThemeTrieElement> kvp in dict)
                 {
                     int pairHash = kvp.Key?.GetHashCode() ?? 0;
                     pairHash = (pairHash * 31) + (kvp.Value?.GetHashCode() ?? 0);
-                    hash ^= pairHash;
+
+                    // Add pairHash to the total hash. Using addition instead of XOR to
+                    // reduce hash collisions in cases where keys and values have similar hash codes.
+                    hash += pairHash;
                 }
                 return hash;
             }
@@ -261,8 +288,7 @@ namespace TextMateSharp.Themes
 
         /// <summary>
         /// Single entry point for all equality checks. Contains the ReferenceEquals
-        /// and null guards so they exist in exactly one place - matching the
-        /// StateStack/AttributedScopeStack convention.
+        /// and null guards so they exist in exactly one place.
         /// </summary>
         private static bool Equals(ThemeTrieElement a, ThemeTrieElement b)
         {
@@ -274,8 +300,8 @@ namespace TextMateSharp.Themes
             if (a is null || b is null)
                 return false;
 
-            // mainRule: uses ThemeTrieElementRule private static Equals via operator ==
-            if (a.mainRule != b.mainRule)
+            // mainRule: uses ThemeTrieElementRuleEqualityComparer for value-based equality of mainRule properties
+            if (!ThemeTrieElementRuleEqualityComparer.Default.Equals(a.mainRule, b.mainRule))
                 return false;
 
             // rulesWithParentScopes: deep element-by-element comparison
@@ -289,11 +315,24 @@ namespace TextMateSharp.Themes
             return true;
         }
 
+        /// <summary>
+        /// Determines whether the specified ThemeTrieElement is equal to the current ThemeTrieElement.
+        /// </summary>
+        /// <param name="other">The ThemeTrieElement to compare with the current instance.</param>
+        /// <returns>true if the specified ThemeTrieElement is equal to the current ThemeTrieElement; otherwise, false.</returns>
         public bool Equals(ThemeTrieElement other)
         {
             return Equals(this, other);
         }
 
+        /// <summary>
+        /// Determines whether the specified object is equal to the current ThemeTrieElement instance.
+        /// </summary>
+        /// <remarks>This method overrides Object.Equals to provide a type-specific equality comparison
+        /// for ThemeTrieElement instances. Use this method to check for value equality rather than reference
+        /// equality.</remarks>
+        /// <param name="obj">The object to compare with the current instance. This value can be null.</param>
+        /// <returns>true if the specified object is a ThemeTrieElement and is equal to the current instance; otherwise, false.</returns>
         public override bool Equals(object obj)
         {
             if (obj is ThemeTrieElement other)
@@ -302,11 +341,27 @@ namespace TextMateSharp.Themes
             return false;
         }
 
+        /// <summary>
+        /// Determines whether two ThemeTrieElement instances are equal.
+        /// </summary>
+        /// <remarks>This operator uses the Equals(object) method to evaluate equality. When implementing
+        /// equality operators, it is important to override both Equals(object) and GetHashCode() to ensure consistent
+        /// behavior.</remarks>
+        /// <param name="left">The first ThemeTrieElement instance to compare for equality.</param>
+        /// <param name="right">The second ThemeTrieElement instance to compare for equality.</param>
+        /// <returns>true if the two ThemeTrieElement instances are equal; otherwise, false.</returns>
         public static bool operator ==(ThemeTrieElement left, ThemeTrieElement right)
         {
             return Equals(left, right);
         }
 
+        /// <summary>
+        /// Determines whether two ThemeTrieElement instances are not equal.
+        /// </summary>
+        /// <remarks>This operator uses the Equals method to perform the comparison.</remarks>
+        /// <param name="left">The first ThemeTrieElement instance to compare.</param>
+        /// <param name="right">The second ThemeTrieElement instance to compare.</param>
+        /// <returns>true if the two instances are not equal; otherwise, false.</returns>
         public static bool operator !=(ThemeTrieElement left, ThemeTrieElement right)
         {
             return !Equals(left, right);
@@ -314,9 +369,10 @@ namespace TextMateSharp.Themes
 
         /// <summary>
         /// Deep element-by-element equality for lists of <see cref="ThemeTrieElementRule"/>.
-        /// The original code used Object.Equals which performed reference equality
-        /// on the List object - never a deep comparison.
         /// </summary>
+        /// <param name="a">The first list of theme rules to compare.</param>
+        /// <param name="b">The second list of theme rules to compare.</param>
+        /// <returns>true if the two lists are equal; otherwise, false.</returns>
         private static bool RuleListEquals(List<ThemeTrieElementRule> a, List<ThemeTrieElementRule> b)
         {
             // Use ReferenceEquals to avoid infinite recursion through operator ==
@@ -333,9 +389,8 @@ namespace TextMateSharp.Themes
 
             for (int i = 0; i < count; i++)
             {
-                // Uses ThemeTrieElementRule operator == which dispatches
-                // to its private static Equals(ThemeTrieElementRule, ThemeTrieElementRule)
-                if (a[i] != b[i])
+                // Uses ThemeTrieElementRuleEqualityComparer for value-based equality of ThemeTrieElementRule properties
+                if (!ThemeTrieElementRuleEqualityComparer.Default.Equals(a[i], b[i]))
                     return false;
             }
 
@@ -345,9 +400,10 @@ namespace TextMateSharp.Themes
         /// <summary>
         /// Deep equality for children dictionaries. Compares key sets and
         /// recursively compares values via the private static Equals method.
-        /// The original code used Object.Equals which performed reference equality
-        /// on the Dictionary object - never a deep comparison.
         /// </summary>
+        /// <param name="a">The first dictionary of theme elements to compare.</param>
+        /// <param name="b">The second dictionary of theme elements to compare.</param>
+        /// <returns>true if the two dictionaries are equal; otherwise, false.</returns>
         private static bool ChildrenEquals(Dictionary<string, ThemeTrieElement> a, Dictionary<string, ThemeTrieElement> b)
         {
             // Use ReferenceEquals to avoid infinite recursion through operator ==

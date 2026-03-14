@@ -80,6 +80,7 @@ namespace TextMateSharp.Grammars
                 {
                     return true;
                 }
+                // Use is null checks to guard against infinite recursion through operator ==
                 if (a is null || b is null)
                 {
                     // End of list reached only for one
@@ -116,6 +117,8 @@ namespace TextMateSharp.Grammars
             {
                 return true;
             }
+
+            // Use is null checks to guard against infinite recursion through operator ==
             if (a is null || b is null)
             {
                 return false;
