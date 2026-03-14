@@ -1,7 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-
 using TextMateSharp.Internal.Utils;
 using TextMateSharp.Themes;
 
@@ -25,22 +25,22 @@ namespace TextMateSharp.Internal.Grammars
             Dictionary<string, int> embeddedLanguages)
         {
             this._initialLanguage = initialLanguage;
-            this._themeProvider = themeProvider;
+            this._themeProvider = themeProvider ?? throw new ArgumentNullException(nameof(themeProvider));
             this._defaultAttributes = new BasicScopeAttributes(
                 this._initialLanguage,
                 OptionalStandardTokenType.NotSet,
-                new List<ThemeTrieElementRule>() { this._themeProvider.GetDefaults() });
+                new List<ThemeTrieElementRule>(1) { this._themeProvider.GetDefaults() });
 
             // embeddedLanguages handling
-            this._embeddedLanguages = new Dictionary<string, int>();
+            // clone the embeddedLanguages dictionary to ensure immutability and prevent external modifications
             if (embeddedLanguages != null)
             {
                 // If embeddedLanguages are configured, fill in `this.embeddedLanguages`
-                foreach (string scope in embeddedLanguages.Keys)
-                {
-                    int languageId = embeddedLanguages[scope];
-                    this._embeddedLanguages[scope] = languageId;
-                }
+                this._embeddedLanguages = new Dictionary<string, int>(embeddedLanguages);
+            }
+            else
+            {
+                this._embeddedLanguages = new Dictionary<string, int>();
             }
 
             // create the regex
