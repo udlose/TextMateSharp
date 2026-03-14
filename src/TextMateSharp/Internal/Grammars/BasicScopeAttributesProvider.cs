@@ -10,9 +10,9 @@ namespace TextMateSharp.Internal.Grammars
     internal sealed class BasicScopeAttributesProvider
     {
 
-        private static BasicScopeAttributes _NULL_SCOPE_METADATA = new BasicScopeAttributes(0, 0, null);
+        private static readonly BasicScopeAttributes _NULL_SCOPE_METADATA = new BasicScopeAttributes(0, 0, null);
 
-        private static Regex STANDARD_TOKEN_TYPE_REGEXP = new Regex("\\b(comment|string|regex|meta\\.embedded)\\b");
+        private static readonly Regex STANDARD_TOKEN_TYPE_REGEXP = new Regex("\\b(comment|string|regex|meta\\.embedded)\\b", RegexOptions.Compiled);
 
         private readonly int _initialLanguage;
         private readonly IThemeProvider _themeProvider;

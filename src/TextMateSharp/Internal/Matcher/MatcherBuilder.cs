@@ -217,7 +217,7 @@ namespace TextMateSharp.Internal.Matcher
         class Tokenizer
         {
 
-            private static readonly Regex REGEXP = new Regex("([LR]:|[\\w\\.:][\\w\\.:\\-]*|[\\,\\|\\-\\(\\)])");
+            private static readonly Regex REGEXP = new Regex("([LR]:|[\\w\\.:][\\w\\.:\\-]*|[\\,\\|\\-\\(\\)])", RegexOptions.Compiled);
             private readonly string _input;
             Match _currentMatch;
 

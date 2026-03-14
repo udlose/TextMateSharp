@@ -9,7 +9,7 @@ namespace TextMateSharp.Internal.Utils
     {
 
         private static readonly Regex CAPTURING_REGEX_SOURCE = new Regex(
-                "\\$(\\d+)|\\$\\{(\\d+):\\/(downcase|upcase)}");
+                "\\$(\\d+)|\\$\\{(\\d+):\\/(downcase|upcase)}", RegexOptions.Compiled);
 
         public static string EscapeRegExpCharacters(string value)
         {

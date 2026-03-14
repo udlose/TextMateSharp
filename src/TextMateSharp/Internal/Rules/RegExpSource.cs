@@ -10,8 +10,8 @@ namespace TextMateSharp.Internal.Rules
     internal sealed class RegExpSource
     {
 
-        private static readonly Regex HAS_BACK_REFERENCES = new Regex("\\\\(\\d+)");
-        private static readonly Regex BACK_REFERENCING_END = new Regex("\\\\(\\d+)");
+        private static readonly Regex HAS_BACK_REFERENCES = new Regex("\\\\(\\d+)", RegexOptions.Compiled);
+        private static readonly Regex BACK_REFERENCING_END = new Regex("\\\\(\\d+)", RegexOptions.Compiled);
 
         private readonly RuleId _ruleId;
         private bool _hasAnchor;
@@ -42,7 +42,7 @@ namespace TextMateSharp.Internal.Rules
             }
 
             this._ruleId = ruleId;
-            this._hasBackReferences = HAS_BACK_REFERENCES.Match(this._source).Success;
+            this._hasBackReferences = HAS_BACK_REFERENCES.IsMatch(this._source);
         }
 
         internal RegExpSource Clone()

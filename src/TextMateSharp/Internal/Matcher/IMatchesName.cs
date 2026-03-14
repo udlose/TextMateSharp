@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using TextMateSharp.Internal.Utils;
 
 namespace TextMateSharp.Internal.Matcher
 {
@@ -58,7 +57,7 @@ namespace TextMateSharp.Internal.Matcher
                 return true;
             }
             int len = scopeName.Length;
-            return (thisScopeName.Length > len) && (thisScopeName[len] == '.') && thisScopeName.SubstringAtIndexes(0, len).Equals(scopeName);
+            return (thisScopeName.Length > len) && (thisScopeName[len] == '.') && thisScopeName.StartsWith(scopeName, StringComparison.Ordinal);
         }
     }
 }
