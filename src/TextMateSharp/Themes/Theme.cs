@@ -8,7 +8,7 @@ using TextMateSharp.Registry;
 
 namespace TextMateSharp.Themes
 {
-    public class Theme
+    public sealed class Theme
     {
         private readonly ParsedTheme _theme;
         private readonly ParsedTheme _include;
@@ -100,7 +100,7 @@ namespace TextMateSharp.Themes
         }
     }
 
-    class ParsedTheme
+    sealed class ParsedTheme
     {
         private readonly ThemeTrieElement _root;
         private readonly ThemeTrieElementRule _defaults;
