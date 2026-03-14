@@ -4,7 +4,7 @@ using TextMateSharp.Internal.Utils;
 
 namespace TextMateSharp.Internal.Matcher
 {
-    public interface IMatchesName<T>
+    public interface IMatchesName<in T>
     {
         bool Match(ICollection<string> names, T scopes);
     }
