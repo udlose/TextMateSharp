@@ -129,7 +129,19 @@ namespace TextMateSharp.Internal.Utils
             return (uint)(c - '0') <= 9 || (uint)((c | 0x20) - 'a') <= 5;
         }
 
-        public static int StrCmp(string a, string b)
+        /// <summary>
+        /// Compares two specified strings and returns an integer that indicates their relative position in the sort
+        /// order.
+        /// </summary>
+        /// <remarks>If either string is null, it is considered less than a non-null string. The
+        /// comparison is case-sensitive and culture-dependent by default unless a different StringComparison value is specified.</remarks>
+        /// <param name="a">The first string to compare. This parameter can be null.</param>
+        /// <param name="b">The second string to compare. This parameter can be null.</param>
+        /// <param name="comparison">Specifies the rules for the string comparison. The default is
+        /// <see cref="StringComparison.CurrentCulture"/>.</param>
+        /// <returns>A negative integer if 'a' precedes 'b' in the sort order; a positive integer if 'a' follows 'b'; or zero if
+        /// the strings are equal.</returns>
+        public static int StrCmp(string a, string b, StringComparison comparison = StringComparison.CurrentCulture)
         {
             if (a == b)
             {
@@ -143,7 +155,7 @@ namespace TextMateSharp.Internal.Utils
             {
                 return 1;
             }
-            int result = a.CompareTo(b);
+            int result = string.Compare(a, b, comparison);
             if (result < 0)
             {
                 return -1;
