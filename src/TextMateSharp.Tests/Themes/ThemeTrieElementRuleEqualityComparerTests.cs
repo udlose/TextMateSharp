@@ -153,14 +153,14 @@ namespace TextMateSharp.Tests.Themes
         }
 
         [Test]
-        public void Equals_NameNotPartOfEquality()
+        public void Equals_Different_Names_ReturnsFalse()
         {
             // Arrange — name differs but all equality-relevant fields match
             ThemeTrieElementRule left = new ThemeTrieElementRule("rule.one", DefaultScopeDepth, null, DefaultFontStyle, DefaultForeground, DefaultBackground);
             ThemeTrieElementRule right = new ThemeTrieElementRule("rule.two", DefaultScopeDepth, null, DefaultFontStyle, DefaultForeground, DefaultBackground);
 
             // Act & Assert
-            Assert.IsTrue(_comparer.Equals(left, right), "Name is not part of equality comparison");
+            Assert.IsFalse(_comparer.Equals(left, right));
         }
 
         #endregion Equals tests — field-by-field comparison

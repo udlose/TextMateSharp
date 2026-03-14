@@ -86,6 +86,7 @@ namespace TextMateSharp.Themes
             unchecked
             {
                 int hash = 17;
+                hash = (hash * 31) + (name == null ? 0 : StringComparer.Ordinal.GetHashCode(name));
                 hash = (hash * 31) + scopeDepth;
                 hash = (hash * 31) + (int)fontStyle;
                 hash = (hash * 31) + foreground;
@@ -138,7 +139,8 @@ namespace TextMateSharp.Themes
 
             if (obj is ThemeTrieElementRule other)
             {
-                return scopeDepth == other.scopeDepth &&
+                return name == other.name &&
+                    scopeDepth == other.scopeDepth &&
                     fontStyle == other.fontStyle &&
                     foreground == other.foreground &&
                     background == other.background &&

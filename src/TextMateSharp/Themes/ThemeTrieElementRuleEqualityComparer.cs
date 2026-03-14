@@ -38,7 +38,8 @@ namespace TextMateSharp.Themes
             if (x is null || y is null)
                 return false;
 
-            return x.scopeDepth == y.scopeDepth &&
+            return x.name == y.name &&
+                x.scopeDepth == y.scopeDepth &&
                 x.fontStyle == y.fontStyle &&
                 x.foreground == y.foreground &&
                 x.background == y.background &&

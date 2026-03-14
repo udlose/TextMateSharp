@@ -817,7 +817,7 @@ namespace TextMateSharp.Tests.Themes
         }
 
         [Test]
-        public void IEquatable_Equals_NameNotPartOfEquality()
+        public void IEquatable_Equals_Different_Names_ReturnsFalse()
         {
             // Arrange - name differs but all other fields match.
             // The original Java implementation does not include name in equality.
@@ -825,7 +825,7 @@ namespace TextMateSharp.Tests.Themes
             ThemeTrieElementRule right = new ThemeTrieElementRule("rule.two", DefaultScopeDepth, null, DefaultFontStyle, DefaultForeground, DefaultBackground);
 
             // Act & Assert
-            Assert.IsTrue(left.Equals(right), "Name is not part of equality comparison");
+            Assert.IsFalse(left.Equals(right));
         }
 
         [Test]
