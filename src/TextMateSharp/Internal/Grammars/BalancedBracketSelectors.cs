@@ -58,7 +58,7 @@ namespace TextMateSharp.Internal.Grammars
                 if ("*".Equals(selector))
                 {
                     _allowAny = true;
-                    return new Predicate<List<string>>[0];
+                    return Array.Empty<Predicate<List<string>>>();
                 }
 
                 var matcher = Matcher.Matcher.CreateMatchers(selector);
@@ -72,21 +72,27 @@ namespace TextMateSharp.Internal.Grammars
             return result.ToArray();
         }
 
-        Predicate<List<string>>[] CreateUnbalancedBracketScopes(List<string> unbalancedBracketScopes)
+        static Predicate<List<string>>[] CreateUnbalancedBracketScopes(List<string> unbalancedBracketScopes)
         {
-            List<Predicate<List<string>>> result = new List<Predicate<List<string>>>();
-
-            foreach (string selector in unbalancedBracketScopes)
+            if (unbalancedBracketScopes.Count > 0)
             {
-                var matcher = Matcher.Matcher.CreateMatchers(selector);
-
-                foreach (var matches in matcher)
+                // we have to add at least one element per unbalanced bracket scope
+                var result = new List<Predicate<List<string>>>(unbalancedBracketScopes.Count);
+                foreach (string selector in unbalancedBracketScopes)
                 {
-                    result.Add(matches.Matcher);
+                    var matcher = Matcher.Matcher.CreateMatchers(selector);
+
+                    foreach (var matches in matcher)
+                    {
+                        result.Add(matches.Matcher);
+                    }
                 }
+
+                return result.ToArray();
             }
 
-            return result.ToArray();
+            // avoid allocating a List<T> and then an empty array if we have no unbalanced bracket scopes
+            return Array.Empty<Predicate<List<string>>>();
         }
     }
 }

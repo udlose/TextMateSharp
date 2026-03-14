@@ -316,9 +316,9 @@ namespace TextMateSharp.Grammars
                             return new Uri(grammarPath);
                         }
 
-                        if (grammarPath.StartsWith("./"))
+                        if (grammarPath.StartsWith("./", StringComparison.Ordinal))
                             grammarPath = grammarPath.Substring(2);
-                        grammarPath = grammarPath.Replace("/", ".");
+                        grammarPath = grammarPath.Replace('/', '.');
                         return new Uri(grammarName.ToLower() + "." + grammarPath, UriKind.Relative);
                     }
                 }
@@ -327,7 +327,7 @@ namespace TextMateSharp.Grammars
             return null;
         }
 
-        string GetThemeFile(ThemeName name)
+        static string GetThemeFile(ThemeName name)
         {
             switch (name)
             {
