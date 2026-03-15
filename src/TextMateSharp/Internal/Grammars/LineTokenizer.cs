@@ -511,7 +511,7 @@ namespace TextMateSharp.Internal.Grammars
                 if (r != null)
                 {
                     RuleId matchedRuleId = ruleScanner.Rules[r.GetIndex()];
-                    if (RuleId.WHILE_RULE.NotEquals(matchedRuleId))
+                    if (RuleId.WHILE_RULE != matchedRuleId)
                     {
                         // we shouldn't end up here
                         stack = whileRule.Stack.Pop();

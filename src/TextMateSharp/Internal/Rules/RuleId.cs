@@ -68,7 +68,7 @@ namespace TextMateSharp.Internal.Rules
             return false;
         }
 
-        [Obsolete("Use the '!=' operator instead.")]
+        [Obsolete("Use the '!=' operator instead.", error: false)]
         public bool NotEquals(RuleId otherRule)
         {
             return Id != otherRule.Id;
