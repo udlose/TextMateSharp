@@ -1,0 +1,32 @@
+{
+	"name": "Test Injection Priority",
+	"scopeName": "test.injection.priority",
+	"injectionSelector": "L:source.test.base",
+	"comment": "Synthetic injection grammar with L: prefix (priority -1) for testing injection-wins-on-priority and injection-wins-on-score branches in MatchRuleOrInjections. The L: prefix means this injection wins tie-breaks at the same match position.",
+	"patterns": [
+		{
+			"include": "#inject-tag"
+		},
+		{
+			"include": "#inject-keyword"
+		},
+		{
+			"include": "#inject-symbols"
+		}
+	],
+	"repository": {
+		"inject-tag": {
+			"match": "@TAG",
+			"name": "entity.name.tag.injected.priority"
+		},
+		"inject-keyword": {
+			"match": "\\bKEYWORD\\b",
+			"name": "keyword.injected.priority"
+		},
+		"inject-symbols": {
+			"comment": "Matches one or more @ symbols. Base grammar does not recognize @ at all, so this pattern enables the matchResult==null branch (base no match, injection wins) in MatchRuleOrInjections.",
+			"match": "@+",
+			"name": "punctuation.injected.priority"
+		}
+	}
+}

@@ -1,0 +1,17 @@
+{
+	"name": "Test Injection Normal",
+	"scopeName": "test.injection.normal",
+	"injectionSelector": "source.test.base",
+	"comment": "Synthetic injection grammar without L: prefix (priority 0) for testing base-wins-over-injection and skip-worse-injection branches in MatchRuleOrInjections and MatchInjections. Both injections match @TAG, but this one has lower priority than test.injection.priority.",
+	"patterns": [
+		{
+			"include": "#inject2-keyword"
+		}
+	],
+	"repository": {
+		"inject2-keyword": {
+			"match": "\\bINJECT2\\b",
+			"name": "keyword.injected.normal"
+		}
+	}
+}

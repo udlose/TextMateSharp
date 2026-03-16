@@ -1,0 +1,73 @@
+{
+	"name": "Test While Edge Cases",
+	"scopeName": "source.test.while",
+	"comment": "Synthetic grammar for testing CheckWhileConditions branches (capture processing, End > linePos advancement, WhileStack population) and ScanNext WhileHasBackReferences path. Contains two begin/while rules: one with fixed while captures, one with back-reference in the while pattern.",
+	"patterns": [
+		{
+			"include": "#while-block"
+		},
+		{
+			"include": "#while-backref"
+		},
+		{
+			"include": "#token"
+		}
+	],
+	"repository": {
+		"while-block": {
+			"comment": "Block continuation rule with while captures. The while pattern ^(\\s*)(>>) matches continuation lines starting with >>. WhileCaptures produce named scopes for the whitespace and marker, exercising HandleCaptures inside CheckWhileConditions. The match End > linePos triggers the linePos advancement branch (lines 528-532).",
+			"begin": "^(\\s*)(>>)",
+			"beginCaptures": {
+				"1": {
+					"name": "punctuation.whitespace.leading.test"
+				},
+				"2": {
+					"name": "keyword.operator.continuation.test"
+				}
+			},
+			"while": "^(\\s*)(>>)",
+			"whileCaptures": {
+				"1": {
+					"name": "punctuation.whitespace.leading.test"
+				},
+				"2": {
+					"name": "keyword.operator.continuation.test"
+				}
+			},
+			"name": "meta.block.continuation.test",
+			"patterns": [
+				{
+					"include": "#token"
+				}
+			]
+		},
+		"while-backref": {
+			"comment": "Begin/while rule where the while pattern contains a back-reference (\\1). This sets WhileHasBackReferences = true, exercising ScanNext line 203-207 (WithEndRule + GetWhileWithResolvedBackReferences). On begin, the delimiter word is captured in group 1. On continuation lines, the resolved while pattern checks for that same word.",
+			"begin": "WHILE-(\\w+)",
+			"beginCaptures": {
+				"0": {
+					"name": "keyword.control.while.begin.test"
+				},
+				"1": {
+					"name": "entity.name.tag.delimiter.test"
+				}
+			},
+			"while": "\\1",
+			"whileCaptures": {
+				"0": {
+					"name": "keyword.control.while.continuation.test"
+				}
+			},
+			"name": "meta.while.backref.test",
+			"patterns": [
+				{
+					"include": "#token"
+				}
+			]
+		},
+		"token": {
+			"match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b",
+			"name": "variable.other.test"
+		}
+	}
+}

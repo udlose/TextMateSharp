@@ -1,0 +1,30 @@
+{
+	"name": "Test Injection Base",
+	"scopeName": "source.test.base",
+	"comment": "Synthetic grammar for testing MatchRuleOrInjections and MatchInjections branch coverage. Intentionally minimal - only recognizes KEYWORD, numbers, and identifiers so that injection grammars can win in controlled scenarios.",
+	"patterns": [
+		{
+			"include": "#keyword"
+		},
+		{
+			"include": "#number"
+		},
+		{
+			"include": "#identifier"
+		}
+	],
+	"repository": {
+		"keyword": {
+			"match": "\\bKEYWORD\\b",
+			"name": "keyword.control.test"
+		},
+		"number": {
+			"match": "\\b[0-9]+\\b",
+			"name": "constant.numeric.test"
+		},
+		"identifier": {
+			"match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b",
+			"name": "variable.other.test"
+		}
+	}
+}
