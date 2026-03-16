@@ -350,6 +350,7 @@ namespace TextMateSharp.Tests.Internal.Rules
 
         #region NotEquals (legacy) tests
 
+#pragma warning disable CS0618 // Type or member is obsolete
         [Test]
         public void NotEquals_SameId_ReturnsFalse()
         {
@@ -377,6 +378,7 @@ namespace TextMateSharp.Tests.Internal.Rules
             // Assert
             Assert.IsTrue(result);
         }
+#pragma warning restore CS0618 // Type or member is obsolete
 
         #endregion NotEquals (legacy) tests
 
