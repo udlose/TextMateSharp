@@ -1650,7 +1650,7 @@ namespace TextMateSharp.Tests.Internal.Grammars
             // act
             ITokenizeLineResult result = grammar.TokenizeLine("@@");
 
-            // assert — single token: injection's @+ matched "@@" at [0,2)
+            // assert - single token: injection's @+ matched "@@" at [0,2)
             Assert.AreEqual(1, result.Tokens.Length);
             AssertTokenValuesAreEqual(result.Tokens[0], 0, 2,
                 "source.test.base", "punctuation.injected.priority");

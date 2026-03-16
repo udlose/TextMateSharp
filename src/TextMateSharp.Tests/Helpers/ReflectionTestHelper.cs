@@ -101,7 +101,7 @@ namespace TextMateSharp.Tests.Helpers
 
             Type type = instance.GetType();
 
-            // Walk the type hierarchy to find the field — private fields
+            // Walk the type hierarchy to find the field - private fields
             // declared on a base class are not returned by GetField on the derived type.
             FieldInfo field = null;
             Type current = type;
