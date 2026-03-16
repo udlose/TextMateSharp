@@ -272,11 +272,12 @@ namespace TextMateSharp.Themes
             unchecked
             {
                 // addition is commutative - order-independent accumulation for dictionaries
+                const int primeFactor = 31; // Common prime factor for multiply-accumulate hash code
                 int hash = 0;
                 foreach (KeyValuePair<string, ThemeTrieElement> kvp in dict)
                 {
-                    int pairHash = kvp.Key?.GetHashCode() ?? 0;
-                    pairHash = (pairHash * 31) + (kvp.Value?.GetHashCode() ?? 0);
+                    int pairHash = kvp.Key == null ? 0 : StringComparer.Ordinal.GetHashCode(kvp.Key);
+                    pairHash = (pairHash * primeFactor) + (kvp.Value?.GetHashCode() ?? 0);
 
                     // Add pairHash to the total hash. Using addition instead of XOR to
                     // reduce hash collisions in cases where keys and values have similar hash codes.

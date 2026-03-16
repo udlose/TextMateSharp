@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using System.Collections.Generic;
+using TextMateSharp.Tests.Helpers;
 using TextMateSharp.Themes;
 
 namespace TextMateSharp.Tests.Themes
@@ -160,23 +161,28 @@ namespace TextMateSharp.Tests.Themes
         public void Clone_MutatingClone_DoesNotAffectOriginalValueFields()
         {
             // Arrange
+            const string originalName = "original";
+            const FontStyle originalFontStyle = FontStyle.Bold;
+            const int originalForeground = 10;
+            const int originalBackground = 20;
             ThemeTrieElementRule original = new ThemeTrieElementRule(
-                "original", 1, new List<string> { "source" }, FontStyle.Bold, 10, 20);
+                originalName, 1, new List<string> { "source" },
+                originalFontStyle, originalForeground, originalBackground);
 
             // Act
             ThemeTrieElementRule cloned = original.Clone();
-            cloned.scopeDepth = 99;
-            cloned.fontStyle = FontStyle.Strikethrough;
-            cloned.foreground = 999;
-            cloned.background = 888;
-            cloned.name = "mutated";
+            ReflectionTestHelper.SetProperty(cloned, "scopeDepth", 99);
+            ReflectionTestHelper.SetProperty(cloned, "fontStyle", FontStyle.Strikethrough);
+            ReflectionTestHelper.SetProperty(cloned, "foreground", 999);
+            ReflectionTestHelper.SetProperty(cloned, "background", 888);
+            ReflectionTestHelper.SetProperty(cloned, "name", "mutated");
 
             // Assert - original should be unaffected
-            Assert.AreEqual("original", original.name);
+            Assert.AreEqual(originalName, original.name);
             Assert.AreEqual(1, original.scopeDepth);
-            Assert.AreEqual(FontStyle.Bold, original.fontStyle);
-            Assert.AreEqual(10, original.foreground);
-            Assert.AreEqual(20, original.background);
+            Assert.AreEqual(originalFontStyle, original.fontStyle);
+            Assert.AreEqual(originalForeground, original.foreground);
+            Assert.AreEqual(originalBackground, original.background);
         }
 
         [Test]
@@ -190,6 +196,7 @@ namespace TextMateSharp.Tests.Themes
             ThemeTrieElementRule cloned = original.Clone();
 
             // Assert
+            Assert.AreNotSame(original, cloned);
             Assert.IsTrue(original.Equals(cloned));
             Assert.AreEqual(original.GetHashCode(), cloned.GetHashCode());
         }

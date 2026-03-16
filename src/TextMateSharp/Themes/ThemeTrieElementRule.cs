@@ -7,13 +7,12 @@ namespace TextMateSharp.Themes
     {
         // _themeTrieElementRuleBrand: void;
 
-        public int scopeDepth;
-        public readonly List<string> parentScopes;
-        public FontStyle fontStyle;
-        public int foreground;
-        public int background;
-        public string name;
-
+        public int scopeDepth { get; private set; }
+        public List<string> parentScopes { get; }
+        public FontStyle fontStyle { get; private set; }
+        public int foreground { get; private set; }
+        public int background { get; private set; }
+        public string name { get; private set; }
         public ThemeTrieElementRule(string name, int scopeDepth, List<string> parentScopes, FontStyle fontStyle, int foreground,
                 int background)
         {
