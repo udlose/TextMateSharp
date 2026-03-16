@@ -348,13 +348,16 @@ namespace TextMateSharp.Tests.Themes
         public void GetGuiColorDictionary_WithEmptyGuiColors_ReturnsEmptyReadOnlyDictionary()
         {
             // Arrange
-            Mock<IRawTheme> mockRawTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockRawTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             Dictionary<string, object> emptyColors = new Dictionary<string, object>();
             mockRawTheme.Setup(x => x.GetGuiColors()).Returns(emptyColors);
+            mockRawTheme.Setup(x => x.GetInclude()).Returns("include");
+            mockRawTheme.Setup(x => x.GetTokenColors()).Returns(new List<IRawThemeSetting>());
             mockRawTheme.Setup(x => x.GetSettings()).Returns(new List<IRawThemeSetting>());
 
-            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>(MockBehavior.Strict);
             mockRegistryOptions.Setup(x => x.GetInjections(It.IsAny<string>())).Returns((List<string>)null);
+            mockRegistryOptions.Setup(x => x.GetTheme("include")).Returns((IRawTheme)null);
 
             Theme theme = Theme.CreateFromRawTheme(mockRawTheme.Object, mockRegistryOptions.Object);
 
@@ -371,16 +374,19 @@ namespace TextMateSharp.Tests.Themes
         public void GetGuiColorDictionary_WithSingleGuiColor_ReturnsDictionaryWithOneEntry()
         {
             // Arrange
-            Mock<IRawTheme> mockRawTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockRawTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             Dictionary<string, object> guiColors = new Dictionary<string, object>
             {
                 { "editor.background", "#1E1E1E" }
             };
             mockRawTheme.Setup(x => x.GetGuiColors()).Returns(guiColors);
+            mockRawTheme.Setup(x => x.GetInclude()).Returns("include");
+            mockRawTheme.Setup(x => x.GetTokenColors()).Returns(new List<IRawThemeSetting>());
             mockRawTheme.Setup(x => x.GetSettings()).Returns(new List<IRawThemeSetting>());
 
-            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>(MockBehavior.Strict);
             mockRegistryOptions.Setup(x => x.GetInjections(It.IsAny<string>())).Returns((List<string>)null);
+            mockRegistryOptions.Setup(x => x.GetTheme("include")).Returns((IRawTheme)null);
 
             Theme theme = Theme.CreateFromRawTheme(mockRawTheme.Object, mockRegistryOptions.Object);
 
@@ -398,7 +404,7 @@ namespace TextMateSharp.Tests.Themes
         public void GetGuiColorDictionary_WithMultipleGuiColors_ReturnsDictionaryWithAllEntries()
         {
             // Arrange
-            Mock<IRawTheme> mockRawTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockRawTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             Dictionary<string, object> guiColors = new Dictionary<string, object>
             {
                 { "editor.background", "#1E1E1E" },
@@ -406,10 +412,13 @@ namespace TextMateSharp.Tests.Themes
                 { "editor.lineHighlightBackground", "#282828" }
             };
             mockRawTheme.Setup(x => x.GetGuiColors()).Returns(guiColors);
+            mockRawTheme.Setup(x => x.GetInclude()).Returns("include");
+            mockRawTheme.Setup(x => x.GetTokenColors()).Returns(new List<IRawThemeSetting>());
             mockRawTheme.Setup(x => x.GetSettings()).Returns(new List<IRawThemeSetting>());
 
-            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>(MockBehavior.Strict);
             mockRegistryOptions.Setup(x => x.GetInjections(It.IsAny<string>())).Returns((List<string>)null);
+            mockRegistryOptions.Setup(x => x.GetTheme("include")).Returns((IRawTheme)null);
 
             Theme theme = Theme.CreateFromRawTheme(mockRawTheme.Object, mockRegistryOptions.Object);
 
@@ -431,16 +440,19 @@ namespace TextMateSharp.Tests.Themes
         public void GetGuiColorDictionary_ReturnsReadOnlyDictionary_CannotBeCastToMutableDictionary()
         {
             // Arrange
-            Mock<IRawTheme> mockRawTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockRawTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             Dictionary<string, object> guiColors = new Dictionary<string, object>
             {
                 { "editor.background", "#1E1E1E" }
             };
             mockRawTheme.Setup(x => x.GetGuiColors()).Returns(guiColors);
+            mockRawTheme.Setup(x => x.GetInclude()).Returns("include");
+            mockRawTheme.Setup(x => x.GetTokenColors()).Returns(new List<IRawThemeSetting>());
             mockRawTheme.Setup(x => x.GetSettings()).Returns(new List<IRawThemeSetting>());
 
-            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>(MockBehavior.Strict);
             mockRegistryOptions.Setup(x => x.GetInjections(It.IsAny<string>())).Returns((List<string>)null);
+            mockRegistryOptions.Setup(x => x.GetTheme("include")).Returns((IRawTheme)null);
 
             Theme theme = Theme.CreateFromRawTheme(mockRawTheme.Object, mockRegistryOptions.Object);
 
@@ -457,7 +469,7 @@ namespace TextMateSharp.Tests.Themes
         public void GetGuiColorDictionary_WithSpecialCharactersInKeysAndValues_PreservesSpecialCharacters()
         {
             // Arrange
-            Mock<IRawTheme> mockRawTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockRawTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             Dictionary<string, object> guiColors = new Dictionary<string, object>
             {
                 { "editor.background", "#1E1E1E" },
@@ -466,9 +478,12 @@ namespace TextMateSharp.Tests.Themes
             };
             mockRawTheme.Setup(x => x.GetGuiColors()).Returns(guiColors);
             mockRawTheme.Setup(x => x.GetSettings()).Returns(new List<IRawThemeSetting>());
+            mockRawTheme.Setup(x => x.GetInclude()).Returns("include");
+            mockRawTheme.Setup(x => x.GetTokenColors()).Returns(new List<IRawThemeSetting>());
 
-            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>(MockBehavior.Strict);
             mockRegistryOptions.Setup(x => x.GetInjections(It.IsAny<string>())).Returns((List<string>)null);
+            mockRegistryOptions.Setup(x => x.GetTheme("include")).Returns((IRawTheme)null);
 
             Theme theme = Theme.CreateFromRawTheme(mockRawTheme.Object, mockRegistryOptions.Object);
 
@@ -489,16 +504,19 @@ namespace TextMateSharp.Tests.Themes
         public void GetGuiColorDictionary_CalledMultipleTimes_ReturnsSameCachedInstance()
         {
             // Arrange
-            Mock<IRawTheme> mockRawTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockRawTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             Dictionary<string, object> guiColors = new Dictionary<string, object>
             {
                 { "editor.background", "#1E1E1E" }
             };
             mockRawTheme.Setup(x => x.GetGuiColors()).Returns(guiColors);
+            mockRawTheme.Setup(x => x.GetTokenColors()).Returns(new List<IRawThemeSetting>());
+            mockRawTheme.Setup(x => x.GetInclude()).Returns("include");
             mockRawTheme.Setup(x => x.GetSettings()).Returns(new List<IRawThemeSetting>());
 
-            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>(MockBehavior.Strict);
             mockRegistryOptions.Setup(x => x.GetInjections(It.IsAny<string>())).Returns((List<string>)null);
+            mockRegistryOptions.Setup(x => x.GetTheme("include")).Returns((IRawTheme)null);
 
             Theme theme = Theme.CreateFromRawTheme(mockRawTheme.Object, mockRegistryOptions.Object);
 
@@ -741,7 +759,7 @@ namespace TextMateSharp.Tests.Themes
                 }
             };
 
-            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>(MockBehavior.Strict);
             mockRegistryOptions.Setup(r => r.GetInjections(It.IsAny<string>())).Returns((List<string>)null);
 
             // Act
@@ -804,7 +822,7 @@ namespace TextMateSharp.Tests.Themes
                 }
             };
 
-            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>(MockBehavior.Strict);
             mockRegistryOptions.Setup(r => r.GetInjections(It.IsAny<string>())).Returns((List<string>)null);
 
             // Act
@@ -843,7 +861,7 @@ namespace TextMateSharp.Tests.Themes
                 }
             };
 
-            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>(MockBehavior.Strict);
             mockRegistryOptions.Setup(r => r.GetInjections(It.IsAny<string>())).Returns((List<string>)null);
 
             // Act
@@ -875,7 +893,7 @@ namespace TextMateSharp.Tests.Themes
                 }
             };
 
-            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>(MockBehavior.Strict);
             mockRegistryOptions.Setup(r => r.GetInjections(It.IsAny<string>())).Returns((List<string>)null);
 
             // Act
@@ -914,7 +932,7 @@ namespace TextMateSharp.Tests.Themes
                 }
             };
 
-            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>(MockBehavior.Strict);
             mockRegistryOptions.Setup(r => r.GetInjections(It.IsAny<string>())).Returns((List<string>)null);
 
             // Act
@@ -948,7 +966,7 @@ namespace TextMateSharp.Tests.Themes
                 }
             };
 
-            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>(MockBehavior.Strict);
             mockRegistryOptions.Setup(r => r.GetInjections(It.IsAny<string>())).Returns((List<string>)null);
 
             // Act
@@ -981,7 +999,7 @@ namespace TextMateSharp.Tests.Themes
                 }
             };
 
-            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>(MockBehavior.Strict);
             mockRegistryOptions.Setup(r => r.GetInjections(It.IsAny<string>())).Returns((List<string>)null);
 
             // Act
@@ -999,18 +1017,21 @@ namespace TextMateSharp.Tests.Themes
 
         private static IRawTheme CreateDefaultRawTheme()
         {
-            Mock<IRawTheme> mockRawTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockRawTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             mockRawTheme.Setup(x => x.GetSettings()).Returns(new List<IRawThemeSetting>());
+            mockRawTheme.Setup(x => x.GetInclude()).Returns("include");
             mockRawTheme.Setup(x => x.GetTokenColors()).Returns(new List<IRawThemeSetting>());
+            mockRawTheme.Setup(x => x.GetGuiColors()).Returns(new Dictionary<string, object>());
 
             return mockRawTheme.Object;
         }
 
         private static IRegistryOptions CreateMockRegistryOptions(IRawTheme defaultTheme, List<string> injections)
         {
-            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>(MockBehavior.Strict);
             mockRegistryOptions.Setup(x => x.GetDefaultTheme()).Returns(defaultTheme);
             mockRegistryOptions.Setup(x => x.GetInjections(It.IsAny<string>())).Returns(injections);
+            mockRegistryOptions.Setup(x => x.GetTheme("include")).Returns((IRawTheme)null);
 
             return mockRegistryOptions.Object;
         }

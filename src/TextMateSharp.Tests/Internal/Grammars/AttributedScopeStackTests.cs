@@ -1745,7 +1745,7 @@ namespace TextMateSharp.Tests.Internal.Grammars
                 ExistingForeground,
                 ExistingBackground);
 
-            Mock<IThemeProvider> themeProvider = new Mock<IThemeProvider>();
+            Mock<IThemeProvider> themeProvider = new Mock<IThemeProvider>(MockBehavior.Strict);
             themeProvider.Setup(provider => provider.GetDefaults()).Returns(defaults);
             themeProvider
                 .Setup(provider => provider.ThemeMatch(It.IsAny<IList<string>>()))
@@ -1758,7 +1758,7 @@ namespace TextMateSharp.Tests.Internal.Grammars
                 null,
                 null,
                 new BalancedBracketSelectors([], []),
-                new Mock<IGrammarRepository>().Object,
+                new Mock<IGrammarRepository>(MockBehavior.Strict).Object,
                 themeProvider.Object);
         }
 

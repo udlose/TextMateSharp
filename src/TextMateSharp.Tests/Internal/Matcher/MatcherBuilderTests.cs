@@ -139,7 +139,7 @@ namespace TextMateSharp.Tests.Internal.Matcher
         public void Constructor_ConjunctionOfIdentifiers_AllMustMatch()
         {
             // arrange
-            Mock<IMatchesName<string>> matchesName = new Mock<IMatchesName<string>>();
+            Mock<IMatchesName<string>> matchesName = new Mock<IMatchesName<string>>(MockBehavior.Strict);
             matchesName.Setup(m => m.Match(It.IsAny<ICollection<string>>(), It.Is<string>(s => s == "match")))
                 .Returns<ICollection<string>, string>((ids, _) => ids.Contains("a") && ids.Contains("b"));
             matchesName.Setup(m => m.Match(It.IsAny<ICollection<string>>(), It.Is<string>(s => s == "nomatch")))
@@ -176,7 +176,7 @@ namespace TextMateSharp.Tests.Internal.Matcher
         public void Constructor_DisjunctionWithPipe_CreatesOrMatcher()
         {
             // arrange
-            Mock<IMatchesName<string>> matchesName = new Mock<IMatchesName<string>>();
+            Mock<IMatchesName<string>> matchesName = new Mock<IMatchesName<string>>(MockBehavior.Strict);
             matchesName.Setup(m => m.Match(It.IsAny<ICollection<string>>(), It.Is<string>(s => s == "a")))
                 .Returns<ICollection<string>, string>((ids, _) => ids.Contains("a"));
             matchesName.Setup(m => m.Match(It.IsAny<ICollection<string>>(), It.Is<string>(s => s == "b")))
@@ -225,7 +225,7 @@ namespace TextMateSharp.Tests.Internal.Matcher
         public void Constructor_Negation_InvertsMatch()
         {
             // arrange
-            Mock<IMatchesName<string>> matchesName = new Mock<IMatchesName<string>>();
+            Mock<IMatchesName<string>> matchesName = new Mock<IMatchesName<string>>(MockBehavior.Strict);
             matchesName.Setup(m => m.Match(It.IsAny<ICollection<string>>(), It.Is<string>(s => s == "match")))
                 .Returns<ICollection<string>, string>((ids, _) => ids.Contains("a"));
             matchesName.Setup(m => m.Match(It.IsAny<ICollection<string>>(), It.Is<string>(s => s == "nomatch")))
@@ -244,7 +244,7 @@ namespace TextMateSharp.Tests.Internal.Matcher
         public void Constructor_DoubleNegation_RestoresOriginalMatch()
         {
             // arrange
-            Mock<IMatchesName<string>> matchesName = new Mock<IMatchesName<string>>();
+            Mock<IMatchesName<string>> matchesName = new Mock<IMatchesName<string>>(MockBehavior.Strict);
             matchesName.Setup(m => m.Match(It.IsAny<ICollection<string>>(), It.Is<string>(s => s == "match")))
                 .Returns<ICollection<string>, string>((ids, _) => ids.Contains("a"));
 
@@ -507,7 +507,7 @@ namespace TextMateSharp.Tests.Internal.Matcher
         public void Constructor_HyphenAsNegationOperator_CreatesConjunction()
         {
             // arrange
-            Mock<IMatchesName<string>> matchesName = new Mock<IMatchesName<string>>();
+            Mock<IMatchesName<string>> matchesName = new Mock<IMatchesName<string>>(MockBehavior.Strict);
             matchesName.Setup(m => m.Match(It.IsAny<ICollection<string>>(), It.Is<string>(s => s == "match")))
                 .Returns<ICollection<string>, string>((ids, _) => ids.Contains("a") && !ids.Contains("b"));
             matchesName.Setup(m => m.Match(It.IsAny<ICollection<string>>(), It.Is<string>(s => s == "nomatch")))
@@ -628,7 +628,7 @@ namespace TextMateSharp.Tests.Internal.Matcher
         public void Matcher_RealWorldExample_LanguageScope()
         {
             // arrange
-            Mock<IMatchesName<string>> matchesName = new Mock<IMatchesName<string>>();
+            Mock<IMatchesName<string>> matchesName = new Mock<IMatchesName<string>>(MockBehavior.Strict);
             matchesName.Setup(m => m.Match(It.IsAny<ICollection<string>>(), It.IsAny<string>()))
                 .Returns<ICollection<string>, string>((ids, input) =>
                 {
@@ -660,7 +660,7 @@ namespace TextMateSharp.Tests.Internal.Matcher
         public void Matcher_RealWorldExample_ExcludePattern()
         {
             // arrange
-            Mock<IMatchesName<string>> matchesName = new Mock<IMatchesName<string>>();
+            Mock<IMatchesName<string>> matchesName = new Mock<IMatchesName<string>>(MockBehavior.Strict);
             matchesName.Setup(m => m.Match(It.IsAny<ICollection<string>>(), It.IsAny<string>()))
                 .Returns<ICollection<string>, string>(static (ids, input) =>
                 {
@@ -692,7 +692,7 @@ namespace TextMateSharp.Tests.Internal.Matcher
 
         private static Mock<IMatchesName<string>> CreateMockMatchesName(params string[] matchingIdentifiers)
         {
-            Mock<IMatchesName<string>> mock = new Mock<IMatchesName<string>>();
+            Mock<IMatchesName<string>> mock = new Mock<IMatchesName<string>>(MockBehavior.Strict);
             mock.Setup(m => m.Match(It.IsAny<ICollection<string>>(), It.IsAny<string>()))
                 .Returns<ICollection<string>, string>((identifiers, _) => identifiers.Any(matchingIdentifiers.Contains));
             return mock;

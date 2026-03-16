@@ -21,9 +21,9 @@ namespace TextMateSharp.Tests.Themes
         public void ParseInclude_SourceGetIncludeReturnsNull_ReturnsEmptyListAndSetsThemeIncludeToNull()
         {
             // Arrange
-            Mock<IRawTheme> mockSource = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockSource = new Mock<IRawTheme>(MockBehavior.Strict);
             mockSource.Setup(s => s.GetInclude()).Returns((string)null);
-            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>(MockBehavior.Strict);
 
             // Act
             List<ParsedThemeRule> result = ParsedTheme.ParseInclude(mockSource.Object, mockRegistryOptions.Object, out IRawTheme themeInclude);
@@ -39,9 +39,9 @@ namespace TextMateSharp.Tests.Themes
         public void ParseInclude_SourceGetIncludeReturnsEmpty_ReturnsEmptyListAndSetsThemeIncludeToNull()
         {
             // Arrange
-            Mock<IRawTheme> mockSource = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockSource = new Mock<IRawTheme>(MockBehavior.Strict);
             mockSource.Setup(s => s.GetInclude()).Returns(string.Empty);
-            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>(MockBehavior.Strict);
 
             // Act
             List<ParsedThemeRule> result = ParsedTheme.ParseInclude(mockSource.Object, mockRegistryOptions.Object, out IRawTheme themeInclude);
@@ -58,9 +58,9 @@ namespace TextMateSharp.Tests.Themes
         {
             // Arrange
             const string includeString = "valid-include-name";
-            Mock<IRawTheme> mockSource = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockSource = new Mock<IRawTheme>(MockBehavior.Strict);
             mockSource.Setup(s => s.GetInclude()).Returns(includeString);
-            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>(MockBehavior.Strict);
             mockRegistryOptions.Setup(r => r.GetTheme(includeString)).Returns((IRawTheme)null);
 
             // Act
@@ -78,14 +78,14 @@ namespace TextMateSharp.Tests.Themes
         {
             // Arrange
             const string includeString = "dark-theme";
-            Mock<IRawTheme> mockSource = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockSource = new Mock<IRawTheme>(MockBehavior.Strict);
             mockSource.Setup(s => s.GetInclude()).Returns(includeString);
 
-            Mock<IRawTheme> mockIncludedTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockIncludedTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             mockIncludedTheme.Setup(t => t.GetSettings()).Returns(new List<IRawThemeSetting>());
             mockIncludedTheme.Setup(t => t.GetTokenColors()).Returns(new List<IRawThemeSetting>());
 
-            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>(MockBehavior.Strict);
             mockRegistryOptions.Setup(r => r.GetTheme(includeString)).Returns(mockIncludedTheme.Object);
 
             // Act
@@ -112,7 +112,7 @@ namespace TextMateSharp.Tests.Themes
             const int expectedRuleCount = 1;
             const int expectedRuleIndex = 0;
 
-            Mock<IRawTheme> mockSource = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockSource = new Mock<IRawTheme>(MockBehavior.Strict);
             mockSource.Setup(s => s.GetInclude()).Returns(includeString);
 
             ThemeRaw includedTheme = new ThemeRaw
@@ -130,7 +130,7 @@ namespace TextMateSharp.Tests.Themes
                 }
             };
 
-            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>(MockBehavior.Strict);
             mockRegistryOptions.Setup(r => r.GetTheme(includeString)).Returns(includedTheme);
 
             // Act
@@ -160,9 +160,9 @@ namespace TextMateSharp.Tests.Themes
         public void ParseInclude_SourceGetIncludeReturnsWhitespace_ReturnsEmptyListAndSetsThemeIncludeToNull(string whitespace)
         {
             // Arrange
-            Mock<IRawTheme> mockSource = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockSource = new Mock<IRawTheme>(MockBehavior.Strict);
             mockSource.Setup(s => s.GetInclude()).Returns(whitespace);
-            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>(MockBehavior.Strict);
             mockRegistryOptions.Setup(r => r.GetTheme(whitespace)).Returns((IRawTheme)null);
 
             // Act
@@ -185,14 +185,14 @@ namespace TextMateSharp.Tests.Themes
         public void ParseInclude_VariousIncludeStringFormats_PassesCorrectlyToGetTheme(string includeString)
         {
             // Arrange
-            Mock<IRawTheme> mockSource = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockSource = new Mock<IRawTheme>(MockBehavior.Strict);
             mockSource.Setup(s => s.GetInclude()).Returns(includeString);
 
-            Mock<IRawTheme> mockIncludedTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockIncludedTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             mockIncludedTheme.Setup(t => t.GetSettings()).Returns(new List<IRawThemeSetting>());
             mockIncludedTheme.Setup(t => t.GetTokenColors()).Returns(new List<IRawThemeSetting>());
 
-            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>();
+            Mock<IRegistryOptions> mockRegistryOptions = new Mock<IRegistryOptions>(MockBehavior.Strict);
             mockRegistryOptions.Setup(r => r.GetTheme(includeString)).Returns(mockIncludedTheme.Object);
 
             // Act
@@ -769,7 +769,7 @@ namespace TextMateSharp.Tests.Themes
         public void ParsedGuiColors_NullColors_DoesNotModifyDictionary()
         {
             // Arrange
-            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             mockTheme.Setup(t => t.GetGuiColors()).Returns((Dictionary<string, object>)null);
 
             Dictionary<string, string> colorDictionary = new Dictionary<string, string>();
@@ -785,7 +785,7 @@ namespace TextMateSharp.Tests.Themes
         public void ParsedGuiColors_EmptyColorsDictionary_DoesNotModifyDictionary()
         {
             // Arrange
-            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             mockTheme.Setup(t => t.GetGuiColors()).Returns(new Dictionary<string, object>());
 
             Dictionary<string, string> colorDictionary = new Dictionary<string, string>();
@@ -804,7 +804,7 @@ namespace TextMateSharp.Tests.Themes
             const string colorKey = "editor.background";
             const string colorValue = "#1E1E1E";
 
-            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             mockTheme.Setup(t => t.GetGuiColors()).Returns(new Dictionary<string, object>
             {
                 { colorKey, colorValue }
@@ -832,7 +832,7 @@ namespace TextMateSharp.Tests.Themes
             const string key3 = "editor.lineHighlightBackground";
             const string value3 = "#282828";
 
-            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             mockTheme.Setup(t => t.GetGuiColors()).Returns(new Dictionary<string, object>
             {
                 { key1, value1 },
@@ -860,7 +860,7 @@ namespace TextMateSharp.Tests.Themes
             const string initialValue = "#000000";
             const string newValue = "#1E1E1E";
 
-            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             mockTheme.Setup(t => t.GetGuiColors()).Returns(new Dictionary<string, object>
             {
                 { colorKey, newValue }
@@ -888,7 +888,7 @@ namespace TextMateSharp.Tests.Themes
             const string key3 = "panel.border#top";
             const string value = "#264F78";
 
-            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             mockTheme.Setup(t => t.GetGuiColors()).Returns(new Dictionary<string, object>
             {
                 { key1, value },
@@ -915,7 +915,7 @@ namespace TextMateSharp.Tests.Themes
             const string emptyKey = "";
             const string value = "#FFFFFF";
 
-            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             mockTheme.Setup(t => t.GetGuiColors()).Returns(new Dictionary<string, object>
             {
                 { emptyKey, value }
@@ -938,7 +938,7 @@ namespace TextMateSharp.Tests.Themes
             const string key = "editor.background";
             const string emptyValue = "";
 
-            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             mockTheme.Setup(t => t.GetGuiColors()).Returns(new Dictionary<string, object>
             {
                 { key, emptyValue }
@@ -961,7 +961,7 @@ namespace TextMateSharp.Tests.Themes
             const string key = "editor.background";
             const string whitespaceValue = "   ";
 
-            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             mockTheme.Setup(t => t.GetGuiColors()).Returns(new Dictionary<string, object>
             {
                 { key, whitespaceValue }
@@ -985,13 +985,13 @@ namespace TextMateSharp.Tests.Themes
             const string key2 = "editor.foreground";
             const string value2 = "#D4D4D4";
 
-            Mock<IRawTheme> mockTheme1 = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockTheme1 = new Mock<IRawTheme>(MockBehavior.Strict);
             mockTheme1.Setup(t => t.GetGuiColors()).Returns(new Dictionary<string, object>
             {
                 { key1, value1 }
             });
 
-            Mock<IRawTheme> mockTheme2 = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockTheme2 = new Mock<IRawTheme>(MockBehavior.Strict);
             mockTheme2.Setup(t => t.GetGuiColors()).Returns(new Dictionary<string, object>
             {
                 { key2, value2 }
@@ -1017,13 +1017,13 @@ namespace TextMateSharp.Tests.Themes
             const string firstValue = "#000000";
             const string secondValue = "#1E1E1E";
 
-            Mock<IRawTheme> mockTheme1 = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockTheme1 = new Mock<IRawTheme>(MockBehavior.Strict);
             mockTheme1.Setup(t => t.GetGuiColors()).Returns(new Dictionary<string, object>
             {
                 { key, firstValue }
             });
 
-            Mock<IRawTheme> mockTheme2 = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockTheme2 = new Mock<IRawTheme>(MockBehavior.Strict);
             mockTheme2.Setup(t => t.GetGuiColors()).Returns(new Dictionary<string, object>
             {
                 { key, secondValue }
@@ -1049,7 +1049,7 @@ namespace TextMateSharp.Tests.Themes
             string longKey = new string('k', keyLength);
             string longValue = new string('v', valueLength);
 
-            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             mockTheme.Setup(t => t.GetGuiColors()).Returns(new Dictionary<string, object>
             {
                 { longKey, longValue }
@@ -1078,7 +1078,7 @@ namespace TextMateSharp.Tests.Themes
                 colors[$"color.key{i}"] = $"#00{i:X4}";
             }
 
-            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             mockTheme.Setup(t => t.GetGuiColors()).Returns(colors);
 
             Dictionary<string, string> colorDictionary = new Dictionary<string, string>();
@@ -1109,7 +1109,7 @@ namespace TextMateSharp.Tests.Themes
             const string key3 = "color.hsl";
             const string value3 = "hsl(0, 100%, 50%)";
 
-            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             mockTheme.Setup(t => t.GetGuiColors()).Returns(new Dictionary<string, object>
             {
                 { key1, value1 },
@@ -1138,7 +1138,7 @@ namespace TextMateSharp.Tests.Themes
             const string mixedKey = "Editor.Background";
             const string value = "#1E1E1E";
 
-            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             mockTheme.Setup(t => t.GetGuiColors()).Returns(new Dictionary<string, object>
             {
                 { lowerKey, value },
@@ -2140,7 +2140,7 @@ namespace TextMateSharp.Tests.Themes
         public void ParseTheme_NullSettings_ReturnsEmptyList()
         {
             // Arrange
-            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>(MockBehavior.Strict);
             mockTheme.Setup(t => t.GetSettings()).Returns((List<IRawThemeSetting>)null);
             mockTheme.Setup(t => t.GetTokenColors()).Returns((List<IRawThemeSetting>)null);
 
@@ -2156,7 +2156,7 @@ namespace TextMateSharp.Tests.Themes
         public void ParseTheme_EntryWithNullSettings_SkipsEntry()
         {
             // Arrange
-            Mock<IRawThemeSetting> mockSettingWithNull = new Mock<IRawThemeSetting>();
+            Mock<IRawThemeSetting> mockSettingWithNull = new Mock<IRawThemeSetting>(MockBehavior.Strict);
             mockSettingWithNull.Setup(s => s.GetSetting()).Returns((IThemeSetting)null);
 
             ThemeRaw rawTheme = new ThemeRaw
@@ -2323,9 +2323,10 @@ namespace TextMateSharp.Tests.Themes
         public void ParseTheme_ScopeAsListOfStrings_CreatesRuleForEach()
         {
             // Arrange
-            Mock<IRawThemeSetting> mockSetting = new Mock<IRawThemeSetting>();
+            Mock<IRawThemeSetting> mockSetting = new Mock<IRawThemeSetting>(MockBehavior.Strict);
             List<object> scopeList = new List<object> { "keyword.control", "keyword.operator", "keyword.other" };
             mockSetting.Setup(s => s.GetScope()).Returns(scopeList);
+            mockSetting.Setup(s => s.GetName()).Returns("test");
             mockSetting.Setup(s => s.GetSetting()).Returns(new ThemeRaw { ["foreground"] = "#FF0000" });
 
             ThemeRaw rawTheme = new ThemeRaw
@@ -2347,7 +2348,7 @@ namespace TextMateSharp.Tests.Themes
         public void ParseTheme_ScopeAsEmptyList_CreatesNoRules()
         {
             // Arrange
-            Mock<IRawThemeSetting> mockSetting = new Mock<IRawThemeSetting>();
+            Mock<IRawThemeSetting> mockSetting = new Mock<IRawThemeSetting>(MockBehavior.Strict);
             List<object> emptyList = new List<object>();
             mockSetting.Setup(s => s.GetScope()).Returns(emptyList);
             mockSetting.Setup(s => s.GetSetting()).Returns(new ThemeRaw { ["foreground"] = "#FF0000" });
@@ -2368,8 +2369,9 @@ namespace TextMateSharp.Tests.Themes
         public void ParseTheme_ScopeAsNullOrOtherType_CreatesRuleWithEmptyScope()
         {
             // Arrange - scope is an integer (not string or IList<object>)
-            Mock<IRawThemeSetting> mockSetting = new Mock<IRawThemeSetting>();
+            Mock<IRawThemeSetting> mockSetting = new Mock<IRawThemeSetting>(MockBehavior.Strict);
             mockSetting.Setup(s => s.GetScope()).Returns(12345);
+            mockSetting.Setup(s => s.GetName()).Returns("test");
             mockSetting.Setup(s => s.GetSetting()).Returns(new ThemeRaw { ["foreground"] = "#FF0000" });
 
             ThemeRaw rawTheme = new ThemeRaw
@@ -2491,8 +2493,9 @@ namespace TextMateSharp.Tests.Themes
         public void ParseTheme_NonStringFontStyle_SetsFontStyleNotSet()
         {
             // Arrange - fontStyle is not a string
-            Mock<IRawThemeSetting> mockSetting = new Mock<IRawThemeSetting>();
+            Mock<IRawThemeSetting> mockSetting = new Mock<IRawThemeSetting>(MockBehavior.Strict);
             mockSetting.Setup(s => s.GetScope()).Returns("test.scope");
+            mockSetting.Setup(s => s.GetName()).Returns("test");
             mockSetting.Setup(s => s.GetSetting()).Returns(new ThemeRaw
             {
                 ["fontStyle"] = 123, // Not a string
@@ -2579,7 +2582,7 @@ namespace TextMateSharp.Tests.Themes
             // Arrange
             const string ruleName = "Custom Rule Name";
 
-            Mock<IRawThemeSetting> mockSetting = new Mock<IRawThemeSetting>();
+            Mock<IRawThemeSetting> mockSetting = new Mock<IRawThemeSetting>(MockBehavior.Strict);
             mockSetting.Setup(s => s.GetScope()).Returns("test.scope");
             mockSetting.Setup(s => s.GetName()).Returns(ruleName);
             mockSetting.Setup(s => s.GetSetting()).Returns(new ThemeRaw { ["foreground"] = "#FF0000" });
@@ -2601,7 +2604,7 @@ namespace TextMateSharp.Tests.Themes
         public void ParseTheme_BothSettingsAndTokenColors_ProcessesBoth()
         {
             // Arrange
-            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>();
+            Mock<IRawTheme> mockTheme = new Mock<IRawTheme>(MockBehavior.Strict);
 
             List<IRawThemeSetting> settings = new List<IRawThemeSetting>
             {

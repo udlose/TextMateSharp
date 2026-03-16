@@ -853,7 +853,7 @@ namespace TextMateSharp.Tests.Internal.Utils
 
         private static IOnigCaptureIndex CreateCapture(int start, int end)
         {
-            Mock<IOnigCaptureIndex> capture = new Mock<IOnigCaptureIndex>();
+            Mock<IOnigCaptureIndex> capture = new Mock<IOnigCaptureIndex>(MockBehavior.Strict);
             capture.SetupGet(c => c.Start).Returns(start);
             capture.SetupGet(c => c.End).Returns(end);
             capture.SetupGet(c => c.Length).Returns(end - start);
